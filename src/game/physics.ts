@@ -4,6 +4,11 @@ import { TrackData } from './tracks';
 import { CAR_DEFINITIONS } from './cars';
 import { soundManager } from '../audio/soundManager';
 
+// Pre-allocated static scratch vectors for zero-allocation physics updates
+const _physCarPos = new THREE.Vector3();
+const _physCarFwd = new THREE.Vector3();
+const _physForwardDir = new THREE.Vector3();
+
 export interface CollisionEvent {
   type: 'car_bump' | 'wall_hit' | 'item_box' | 'rocket_hit' | 'mine_hit' | 'boost_pad';
   racerId: string;
@@ -37,11 +42,11 @@ export function updateRacerPhysics(
     input.respawn = false;
     const cp = track.checkpoints[racer.checkpointIndex];
     const nextCp = track.checkpoints[(racer.checkpointIndex + 1) % track.checkpoints.length];
-    const forwardDir = new THREE.Vector3().subVectors(nextCp, cp).normalize();
+    _physForwardDir.subVectors(nextCp, cp).normalize();
     racer.x = cp.x;
     racer.y = cp.y + 0.3;
     racer.z = cp.z;
-    racer.rotY = Math.atan2(forwardDir.x, forwardDir.z);
+    racer.rotY = Math.atan2(_physForwardDir.x, _physForwardDir.z);
     racer.speed = 0;
     racer.spinTimer = 0;
     racer.frozenTimer = 0;
@@ -141,15 +146,6 @@ export function updateRacerPhysics(
     racer.rotY += racer.steerAngle * handlingPower * speedSteerFactor * driftSteerBonus * dt * direction;
   }
 
-  // Weight transfer pitch (squat on acceleration, dive on brake)
-  let targetRotX = 0;
-  if (input.throttle > 0 && racer.speed < topSpeed) {
-    targetRotX = -0.04;
-  } else if (input.brake > 0 && racer.speed > 0) {
-    targetRotX = 0.06;
-  }
-  racer.rotX = THREE.MathUtils.lerp(racer.rotX || 0, targetRotX, dt * 7.0);
-
   // Position movement with authentic drift lateral slip
   const moveSpeed = racer.speed * dt;
   const driftSlip = racer.isDrifting ? racer.steerAngle * 0.26 : 0;
@@ -158,19 +154,36 @@ export function updateRacerPhysics(
   racer.z += Math.cos(moveHeading) * moveSpeed;
 
   // Accurate track centerline query using the continuous spline helper
-  const carPos = new THREE.Vector3(racer.x, 0, racer.z);
-  const trackInfo = track.getTrackInfo(carPos);
+  _physCarPos.set(racer.x, racer.y, racer.z);
+  const trackInfo = track.getTrackInfo(_physCarPos);
 
   // Height adherence
   const targetY = trackInfo.closestPoint.y;
-  racer.y = THREE.MathUtils.lerp(racer.y, targetY, dt * 12);
+  racer.y = THREE.MathUtils.lerp(racer.y, targetY, dt * 14);
+
+  // Weight transfer pitch (squat on acceleration, dive on brake) + Road slope pitch
+  let targetRotX = 0;
+  if (input.throttle > 0 && racer.speed < topSpeed) {
+    targetRotX = -0.04;
+  } else if (input.brake > 0 && racer.speed > 0) {
+    targetRotX = 0.06;
+  }
+  // Authentic slope pitch: tilting up on uphills and down on downhills!
+  const slopePitch = Math.asin(THREE.MathUtils.clamp(trackInfo.tangent.y, -0.65, 0.65));
+  targetRotX -= slopePitch;
+  racer.rotX = THREE.MathUtils.lerp(racer.rotX || 0, targetRotX, dt * 8.0);
 
   // Wrong-Way orientation check against track tangent
-  const carFwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
-  const dot = carFwd.dot(trackInfo.tangent);
+  _physCarFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
+  const dot = _physCarFwd.dot(trackInfo.tangent);
   racer.isWrongWay = dot < -0.35 && racer.speed > 8;
 
-  // Off-road terrain handling (grass, sand, snow)
+  // Update racer surface states from track info
+  racer.currentSurface = trackInfo.surface || 'asphalt';
+  racer.surfaceName = trackInfo.surfaceName || 'Rannatee';
+  racer.surfaceIcon = trackInfo.surfaceIcon || '🛣️';
+
+  // Off-road terrain and surface-specific handling
   if (trackInfo.isOffroad) {
     // Off-road decelerates car to a moderate safe speed, but doesn't bounce or teleport!
     // Turbo bypasses offroad slowdown (just like Mario Kart mushroom cutting corners!)
@@ -185,11 +198,55 @@ export function updateRacerPhysics(
     if (racer.turboTimer <= 0 && racer.speed > 36) {
       racer.speed -= 4.0 * dt;
     }
+  } else {
+    // Dynamic Road Surface Modifiers
+    switch (racer.currentSurface) {
+      case 'sand':
+        // Soft beach sand causes slight drag unless in turbo
+        if (racer.turboTimer <= 0 && racer.speed > 35) {
+          racer.speed -= 7.0 * dt;
+        }
+        break;
+      case 'ice':
+        // Ice maintains momentum with minimal friction, slips in turns
+        if (Math.abs(input.steer) > 0.4) {
+          racer.rotY += racer.steerAngle * 0.4 * dt;
+        }
+        break;
+      case 'wood':
+        // Pier planks: rhythmic gentle rolling resistance
+        if (racer.turboTimer <= 0 && racer.speed > 39) {
+          racer.speed -= 3.0 * dt;
+        }
+        break;
+      case 'cobblestone':
+        // Cobblestone gives great feedback and faster mini-turbo charging
+        if (racer.isDrifting) {
+          racer.driftChargeTime = (racer.driftChargeTime || 0) + dt * 0.25;
+        }
+        break;
+      case 'dirt':
+        // Rally dirt: easily initiates power-slides
+        if (Math.abs(input.steer) > 0.6 && racer.speed > 16) {
+          racer.isDrifting = true;
+        }
+        break;
+      case 'glass':
+      case 'cyber_grid':
+        // Ultra smooth high-tech surface gives a slight top speed boost
+        if (racer.speed > 25 && input.throttle > 0) {
+          racer.speed += 2.2 * dt;
+        }
+        break;
+      case 'magma_rock':
+        // Basalt rock: intense traction
+        break;
+    }
   }
 
   // Outer track boundary collision (soft barrier bounce)
   if (trackInfo.isWallHit) {
-    const maxPlayableRadius = (track.trackWidth * 0.5) + 6.5;
+    const maxPlayableRadius = (track.trackWidth * 0.5) + 10.0;
     const excess = trackInfo.distanceToCenter - maxPlayableRadius;
 
     if (excess > 0) {
@@ -218,7 +275,7 @@ export function updateRacerPhysics(
   const numCp = track.checkpoints.length;
   for (let offset = 1; offset <= 3; offset++) {
     const candidateIdx = (racer.checkpointIndex + offset) % numCp;
-    const distToCp = carPos.distanceTo(track.checkpoints[candidateIdx]);
+    const distToCp = _physCarPos.distanceTo(track.checkpoints[candidateIdx]);
 
     if (distToCp < 28) {
       // Crossed start/finish line to finish a lap
@@ -240,11 +297,11 @@ export function updateRacerPhysics(
     }
   }
 
-  // Item box pickups
+  // Item box pickups (3D distance check to prevent cross-level triggering on bridges)
   track.itemBoxes.forEach(box => {
     if (!box.active) return;
-    const boxDist = Math.hypot(racer.x - box.x, racer.z - box.z);
-    if (boxDist < 2.8) {
+    const boxDist = Math.hypot(racer.x - box.x, (racer.y - box.y) * 1.5, racer.z - box.z);
+    if (boxDist < 2.9) {
       box.active = false;
       box.respawnTime = 5; // Respawn after 5 seconds
       box.mesh.visible = false;
@@ -261,10 +318,10 @@ export function updateRacerPhysics(
     }
   });
 
-  // Boost pad trigger
+  // Boost pad trigger (3D distance check)
   track.boostPads.forEach(pad => {
-    const padDist = Math.hypot(racer.x - pad.x, racer.z - pad.z);
-    if (padDist < 3.8) {
+    const padDist = Math.hypot(racer.x - pad.x, (racer.y - pad.y) * 1.5, racer.z - pad.z);
+    if (padDist < 4.0) {
       racer.turboTimer = 2.2;
       racer.speed = Math.max(racer.speed + 10, maxBaseSpeed * 1.34);
 

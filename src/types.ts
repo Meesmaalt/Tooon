@@ -37,7 +37,7 @@ export interface TrackCheckpoint {
 export interface TrackDefinition {
   id: string;
   name: string;
-  theme: 'beach' | 'spooky' | 'cyber' | 'ice';
+  theme: 'beach' | 'spooky' | 'cyber' | 'ice' | 'volcano' | 'sky';
   difficulty: 'Easy' | 'Medium' | 'Hard';
   description: string;
   lengthMeters: number;
@@ -141,6 +141,11 @@ export interface RacerState {
   bounceOffset: number;
   speechText?: string;
   speechTimer?: number;
+  
+  // Surface information
+  currentSurface?: string;
+  surfaceName?: string;
+  surfaceIcon?: string;
 }
 
 export interface RoomPlayer {

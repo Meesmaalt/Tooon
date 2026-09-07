@@ -112,46 +112,75 @@ export function getRandomPowerUp(position: number, totalRacers: number = 6): Pow
   return 'turbo';
 }
 
+// Static shared geometries & materials for projectiles to prevent memory allocations and shader compile freezes
+const rocketBodyGeo = new THREE.CylinderGeometry(0.18, 0.22, 1.2, 10);
+rocketBodyGeo.rotateX(Math.PI / 2);
+const rocketBodyMat = new THREE.MeshStandardMaterial({
+  color: 0xef4444,
+  metalness: 0.4,
+  roughness: 0.3,
+});
+
+const rocketNoseGeo = new THREE.ConeGeometry(0.22, 0.5, 10);
+rocketNoseGeo.rotateX(Math.PI / 2);
+const rocketNoseMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
+
+const rocketFinGeo = new THREE.BoxGeometry(0.7, 0.05, 0.3);
+const rocketFinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
+
+const rocketFlameGeo = new THREE.ConeGeometry(0.15, 0.4, 8);
+rocketFlameGeo.rotateX(-Math.PI / 2);
+const rocketFlameMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+
+const mineSphereGeo = new THREE.SphereGeometry(0.45, 12, 12);
+const mineBombMat = new THREE.MeshStandardMaterial({
+  color: 0x18181b,
+  roughness: 0.6,
+});
+
+const mineFuseGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.3, 6);
+const mineFuseMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
+
+const mineSparkGeo = new THREE.SphereGeometry(0.09, 6, 6);
+const mineSparkMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
+
+const mineSpikeGeo = new THREE.ConeGeometry(0.12, 0.3, 6);
+const mineSpikeMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
+
+const sharedShieldGeo = new THREE.SphereGeometry(1.6, 16, 16);
+const sharedShieldMat = new THREE.MeshStandardMaterial({
+  color: 0x38bdf8,
+  emissive: 0x0284c7,
+  emissiveIntensity: 0.6,
+  transparent: true,
+  opacity: 0.4,
+  roughness: 0.1,
+  wireframe: false,
+});
+
 /**
- * 3D Projectile Mesh Generator
+ * 3D Projectile Mesh Generator (Uses pre-cached assets)
  */
 export function createRocketMesh(): THREE.Group {
   const group = new THREE.Group();
 
-  // Missile cone
-  const bodyGeo = new THREE.CylinderGeometry(0.18, 0.22, 1.2, 12);
-  bodyGeo.rotateX(Math.PI / 2);
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0xef4444,
-    metalness: 0.4,
-    roughness: 0.3,
-  });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  const body = new THREE.Mesh(rocketBodyGeo, rocketBodyMat);
   group.add(body);
 
-  // Nose tip
-  const noseGeo = new THREE.ConeGeometry(0.22, 0.5, 12);
-  noseGeo.rotateX(Math.PI / 2);
-  const noseMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
-  const nose = new THREE.Mesh(noseGeo, noseMat);
+  const nose = new THREE.Mesh(rocketNoseGeo, rocketNoseMat);
   nose.position.z = 0.8;
   group.add(nose);
 
-  // Fins
-  const finGeo = new THREE.BoxGeometry(0.7, 0.05, 0.3);
-  const finMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
-  const fin1 = new THREE.Mesh(finGeo, finMat);
+  const fin1 = new THREE.Mesh(rocketFinGeo, rocketFinMat);
   fin1.position.z = -0.4;
   group.add(fin1);
-  const fin2 = fin1.clone();
+
+  const fin2 = new THREE.Mesh(rocketFinGeo, rocketFinMat);
+  fin2.position.z = -0.4;
   fin2.rotation.z = Math.PI / 2;
   group.add(fin2);
 
-  // Flame glow at rear
-  const flameGeo = new THREE.ConeGeometry(0.15, 0.4, 8);
-  flameGeo.rotateX(-Math.PI / 2);
-  const flameMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
-  const flame = new THREE.Mesh(flameGeo, flameMat);
+  const flame = new THREE.Mesh(rocketFlameGeo, rocketFlameMat);
   flame.position.z = -0.7;
   group.add(flame);
 
@@ -161,35 +190,20 @@ export function createRocketMesh(): THREE.Group {
 export function createMineMesh(): THREE.Group {
   const group = new THREE.Group();
 
-  // Spiked bomb
-  const sphereGeo = new THREE.SphereGeometry(0.45, 16, 16);
-  const bombMat = new THREE.MeshStandardMaterial({
-    color: 0x18181b,
-    roughness: 0.6,
-  });
-  const bomb = new THREE.Mesh(sphereGeo, bombMat);
+  const bomb = new THREE.Mesh(mineSphereGeo, mineBombMat);
   group.add(bomb);
 
-  // Fuse
-  const fuseGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.3, 8);
-  const fuseMat = new THREE.MeshStandardMaterial({ color: 0x78350f });
-  const fuse = new THREE.Mesh(fuseGeo, fuseMat);
+  const fuse = new THREE.Mesh(mineFuseGeo, mineFuseMat);
   fuse.position.y = 0.5;
   group.add(fuse);
 
-  // Spark
-  const sparkGeo = new THREE.SphereGeometry(0.09, 8, 8);
-  const sparkMat = new THREE.MeshBasicMaterial({ color: 0xf59e0b });
-  const spark = new THREE.Mesh(sparkGeo, sparkMat);
+  const spark = new THREE.Mesh(mineSparkGeo, mineSparkMat);
   spark.position.y = 0.65;
   group.add(spark);
 
-  // Spikes
-  const spikeGeo = new THREE.ConeGeometry(0.12, 0.3, 6);
-  const spikeMat = new THREE.MeshStandardMaterial({ color: 0xef4444 });
   const angles = [0, Math.PI / 2, Math.PI, Math.PI * 1.5];
   angles.forEach(a => {
-    const s = new THREE.Mesh(spikeGeo, spikeMat);
+    const s = new THREE.Mesh(mineSpikeGeo, mineSpikeMat);
     s.position.set(Math.cos(a) * 0.45, 0, Math.sin(a) * 0.45);
     s.rotation.z = -Math.PI / 2;
     s.rotation.y = a;
@@ -200,15 +214,5 @@ export function createMineMesh(): THREE.Group {
 }
 
 export function createShieldMesh(): THREE.Mesh {
-  const geo = new THREE.SphereGeometry(1.6, 24, 24);
-  const mat = new THREE.MeshStandardMaterial({
-    color: 0x38bdf8,
-    emissive: 0x0284c7,
-    emissiveIntensity: 0.6,
-    transparent: true,
-    opacity: 0.4,
-    roughness: 0.1,
-    wireframe: false,
-  });
-  return new THREE.Mesh(geo, mat);
+  return new THREE.Mesh(sharedShieldGeo, sharedShieldMat);
 }

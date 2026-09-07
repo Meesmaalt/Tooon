@@ -68,7 +68,7 @@ export function computeAIInput(
   aiCtrl.tauntCooldown -= dt;
   aiCtrl.reactionTimer -= dt;
 
-  const carPos = new THREE.Vector3(racer.x, 0, racer.z);
+  const carPos = new THREE.Vector3(racer.x, racer.y, racer.z);
   const trackInfo = track.getTrackInfo(carPos);
 
   // 1. Check if car is pointing backwards or in wrong direction

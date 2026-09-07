@@ -9,6 +9,15 @@ import { soundManager } from '../audio/soundManager';
 import { ParticleSystem } from './particles';
 import { SkidMarkManager } from './skidmarks';
 
+// Pre-allocated static scratch vectors for zero-allocation per-frame engine updates
+const _visFwd = new THREE.Vector3();
+const _visRight = new THREE.Vector3();
+const _visPos = new THREE.Vector3();
+const _camFwd = new THREE.Vector3();
+const _camDir = new THREE.Vector3();
+const _targetCamPos = new THREE.Vector3();
+const _camLookTarget = new THREE.Vector3();
+
 export interface GameEngineCallbacks {
   onHUDUpdate: (data: {
     speed: number;
@@ -24,6 +33,9 @@ export interface GameEngineCallbacks {
     currentLapTime: number;
     bestLapTime: number | null;
     driftCharge: number;
+    currentSurface?: string;
+    surfaceName?: string;
+    surfaceIcon?: string;
   }) => void;
   onCombatEvent: (message: string) => void;
   onRaceFinished: (results: RacerState[]) => void;
@@ -61,6 +73,7 @@ export class ToonCarEngine {
   private cameraShake: number = 0;
   private hudTimer: number = 0;
   private cachedMinimapPoints: { x: number; z: number }[] | null = null;
+  private cachedMinimapRacers: { id: string; x: number; z: number; color: string; isPlayer: boolean; position: number }[] = [];
 
   // Local player input
   public localInput: PlayerInput = {
@@ -138,6 +151,22 @@ export class ToonCarEngine {
     // 6. Resize listener
     window.addEventListener('resize', this.onWindowResize);
 
+    // 7. Pre-compile all WebGL shaders upfront (track, cars, particles, items, shields, rockets, mines)
+    // This completely eliminates any synchronous shader compilation stutter when first picking up boxes or firing items!
+    const warmupGroup = new THREE.Group();
+    warmupGroup.visible = false;
+    warmupGroup.add(createRocketMesh());
+    warmupGroup.add(createMineMesh());
+    warmupGroup.add(createShieldMesh());
+    this.particles.getWarmupMeshes().forEach(m => warmupGroup.add(m));
+    this.scene.add(warmupGroup);
+
+    try {
+      this.renderer.compile(this.scene, this.camera);
+    } catch (_) {}
+
+    this.scene.remove(warmupGroup);
+
     // Start audio
     soundManager.init();
     soundManager.startMusic();
@@ -196,6 +225,9 @@ export class ToonCarEngine {
     this.scene.add(this.trackData.wallsMesh);
     this.scene.add(this.trackData.startArch);
     this.scene.add(this.trackData.decorations);
+    if (this.trackData.waterMesh) {
+      this.scene.add(this.trackData.waterMesh);
+    }
 
     // Item boxes
     this.trackData.itemBoxes.forEach(box => {
@@ -609,6 +641,9 @@ export class ToonCarEngine {
           currentLapTime,
           bestLapTime: localRacer.bestLapTime,
           driftCharge,
+          currentSurface: localRacer.currentSurface,
+          surfaceName: localRacer.surfaceName,
+          surfaceIcon: localRacer.surfaceIcon,
         });
       }
     }
@@ -812,6 +847,10 @@ export class ToonCarEngine {
         this.projectileMeshes.delete(id);
       }
     });
+
+    if (this.projectiles.some(p => !p.active)) {
+      this.projectiles = this.projectiles.filter(p => p.active);
+    }
   }
 
   private updateVisualMeshes(dt: number) {
@@ -863,28 +902,38 @@ export class ToonCarEngine {
       if (racer.isDrifting) {
         this.skidMarks.addSkid(racer.id, racer.x, racer.y, racer.z, racer.rotY);
         const sparkLevel: 1 | 2 | 3 = (racer.driftChargeTime || 0) >= 2.6 ? 3 : ((racer.driftChargeTime || 0) >= 1.6 ? 2 : 1);
-        const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
-        const right = new THREE.Vector3(fwd.z, 0, -fwd.x);
-        const rearL = new THREE.Vector3(racer.x, racer.y, racer.z).add(fwd.clone().multiplyScalar(-0.8)).add(right.clone().multiplyScalar(-0.75));
-        const rearR = new THREE.Vector3(racer.x, racer.y, racer.z).add(fwd.clone().multiplyScalar(-0.8)).add(right.clone().multiplyScalar(0.75));
-        this.particles.emitDriftSparks(rearL.x, rearL.y, rearL.z, sparkLevel);
-        this.particles.emitDriftSparks(rearR.x, rearR.y, rearR.z, sparkLevel);
+        _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
+        _visRight.set(_visFwd.z, 0, -_visFwd.x);
+
+        const rLx = racer.x + _visFwd.x * -0.8 + _visRight.x * -0.75;
+        const rLz = racer.z + _visFwd.z * -0.8 + _visRight.z * -0.75;
+        const rRx = racer.x + _visFwd.x * -0.8 + _visRight.x * 0.75;
+        const rRz = racer.z + _visFwd.z * -0.8 + _visRight.z * 0.75;
+
+        this.particles.emitDriftSparks(rLx, racer.y, rLz, sparkLevel);
+        this.particles.emitDriftSparks(rRx, racer.y, rRz, sparkLevel);
       } else {
         this.skidMarks.stopSkid(racer.id);
       }
 
       // Nitro flames
       if (racer.turboTimer > 0) {
-        const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
-        const right = new THREE.Vector3(fwd.z, 0, -fwd.x);
-        const exL = new THREE.Vector3(racer.x, racer.y + 0.45, racer.z).add(fwd.clone().multiplyScalar(-1.4)).add(right.clone().multiplyScalar(-0.45));
-        const exR = new THREE.Vector3(racer.x, racer.y + 0.45, racer.z).add(fwd.clone().multiplyScalar(-1.4)).add(right.clone().multiplyScalar(0.45));
-        this.particles.emitNitroFlame(exL.x, exL.y, exL.z, racer.rotY);
-        this.particles.emitNitroFlame(exR.x, exR.y, exR.z, racer.rotY);
+        _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
+        _visRight.set(_visFwd.z, 0, -_visFwd.x);
+        const exY = racer.y + 0.45;
+        const exLx = racer.x + _visFwd.x * -1.4 + _visRight.x * -0.45;
+        const exLz = racer.z + _visFwd.z * -1.4 + _visRight.z * -0.45;
+        const exRx = racer.x + _visFwd.x * -1.4 + _visRight.x * 0.45;
+        const exRz = racer.z + _visFwd.z * -1.4 + _visRight.z * 0.45;
+
+        this.particles.emitNitroFlame(exLx, exY, exLz, racer.rotY);
+        this.particles.emitNitroFlame(exRx, exY, exRz, racer.rotY);
       } else if (Math.abs(racer.speed) > 12 && Math.random() < 0.22) {
-        const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
-        const exPos = new THREE.Vector3(racer.x, racer.y + 0.35, racer.z).add(fwd.multiplyScalar(-1.4));
-        this.particles.emitExhaustSmoke(exPos.x, exPos.y, exPos.z, racer.rotY);
+        _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
+        const exPosX = racer.x + _visFwd.x * -1.4;
+        const exPosY = racer.y + 0.35;
+        const exPosZ = racer.z + _visFwd.z * -1.4;
+        this.particles.emitExhaustSmoke(exPosX, exPosY, exPosZ, racer.rotY);
       }
 
       // Shield mesh visibility
@@ -899,16 +948,16 @@ export class ToonCarEngine {
   }
 
   private updateRacePositions() {
-    // Sort racers by: Lap desc, then CheckpointIndex desc, then distance
-    const sorted = [...this.racers].sort((a, b) => {
+    // In-place sort to prevent creating new array garbage every frame
+    this.racers.sort((a, b) => {
       if (a.lap !== b.lap) return b.lap - a.lap;
       if (a.checkpointIndex !== b.checkpointIndex) return b.checkpointIndex - a.checkpointIndex;
       return b.totalDistance - a.totalDistance;
     });
 
-    sorted.forEach((r, idx) => {
-      r.position = idx + 1;
-    });
+    for (let idx = 0; idx < this.racers.length; idx++) {
+      this.racers[idx].position = idx + 1;
+    }
   }
 
   private updateCamera(dt: number) {
@@ -916,23 +965,26 @@ export class ToonCarEngine {
     if (!player) return;
 
     const isLookingBack = !!this.localInput.lookBehind;
-    const fwd = new THREE.Vector3(Math.sin(player.rotY), 0, Math.cos(player.rotY)).normalize();
-    const camDir = isLookingBack ? fwd.clone() : fwd.clone().negate();
+    _camFwd.set(Math.sin(player.rotY), 0, Math.cos(player.rotY)).normalize();
+    if (isLookingBack) {
+      _camDir.copy(_camFwd);
+    } else {
+      _camDir.copy(_camFwd).negate();
+    }
     const camDist = 7.5 + (player.turboTimer > 0 ? 1.4 : 0);
     const camHeight = 3.6;
 
-    const targetCamPos = new THREE.Vector3(player.x, player.y, player.z)
-      .add(camDir.multiplyScalar(camDist));
-    targetCamPos.y += camHeight;
+    _targetCamPos.set(player.x, player.y + camHeight, player.z)
+      .addScaledVector(_camDir, camDist);
 
     // Completely rock-solid camera damping without any jitter or shaking
     this.cameraShake = 0;
-    this.camera.position.lerp(targetCamPos, Math.min(dt * 8.0, 0.35));
+    this.camera.position.lerp(_targetCamPos, Math.min(dt * 8.0, 0.35));
 
     const lookAheadDist = isLookingBack ? -8 : 5.0;
-    const lookTarget = new THREE.Vector3(player.x, player.y + 1.25, player.z).add(fwd.clone().multiplyScalar(lookAheadDist));
+    _camLookTarget.set(player.x, player.y + 1.25, player.z).addScaledVector(_camFwd, lookAheadDist);
     this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(lookTarget);
+    this.camera.lookAt(_camLookTarget);
 
     // Dynamic FOV for speed sensation - smooth and comfortable without fish-eye dizziness
     const targetFOV = player.turboTimer > 0 ? 76 : (player.speed > 25 ? 70 : 64);
@@ -956,15 +1008,28 @@ export class ToonCarEngine {
     if (!this.cachedMinimapPoints) {
       this.cachedMinimapPoints = this.trackData.checkpoints.map(cp => ({ x: cp.x, z: cp.z }));
     }
-    const racers = this.racers.map(r => ({
-      id: r.id,
-      x: r.x,
-      z: r.z,
-      color: r.color,
-      isPlayer: r.id === this.localPlayerId,
-      position: r.position,
-    }));
-    return { curvePoints: this.cachedMinimapPoints, racers };
+    if (this.cachedMinimapRacers.length !== this.racers.length) {
+      this.cachedMinimapRacers = this.racers.map(r => ({
+        id: r.id,
+        x: r.x,
+        z: r.z,
+        color: r.color,
+        isPlayer: r.id === this.localPlayerId,
+        position: r.position,
+      }));
+    } else {
+      for (let i = 0; i < this.racers.length; i++) {
+        const r = this.racers[i];
+        const mr = this.cachedMinimapRacers[i];
+        mr.id = r.id;
+        mr.x = r.x;
+        mr.z = r.z;
+        mr.color = r.color;
+        mr.isPlayer = r.id === this.localPlayerId;
+        mr.position = r.position;
+      }
+    }
+    return { curvePoints: this.cachedMinimapPoints, racers: this.cachedMinimapRacers };
   }
 
   public destroy() {

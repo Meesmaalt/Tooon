@@ -1,5 +1,5 @@
 import React from 'react';
-import { TRACK_DEFINITIONS } from '../game/tracks';
+import { TRACK_DEFINITIONS, getTrackSectors } from '../game/tracks';
 import { GameMode, SpeedClass } from '../types';
 import { Flag, Compass, Flame, Trophy, Timer, Play, Gauge } from 'lucide-react';
 
@@ -118,7 +118,7 @@ export const TrackSelect: React.FC<TrackSelectProps> = ({
         <div className="mb-4 p-3 bg-amber-500/15 border border-amber-400/40 rounded-xl flex items-center gap-3 text-amber-200 text-xs">
           <Trophy className="w-5 h-5 text-amber-400 shrink-0" />
           <div>
-            <span className="font-bold text-amber-300">Toon Grand Prix Karikasari:</span> Sõidad järjest kõik 4 rada (Sunny Beach → Spooky Castle → Cyber Canyon → Frozen Peak). Iga etapi finišis jagatakse punkte (15, 12, 10, 8, 6, 4 pt)!
+            <span className="font-bold text-amber-300">Toon Grand Prix Karikasari:</span> Sõidad järjest läbi 6 suurejoonelist rada (Sunny Beach → Spooky Castle → Cyber Canyon → Frozen Peak → Volcano Island → Sky Metropolis). Iga etapi finišis jagatakse punkte (15, 12, 10, 8, 6, 4 pt)!
           </div>
         </div>
       )}
@@ -132,7 +132,7 @@ export const TrackSelect: React.FC<TrackSelectProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {TRACK_DEFINITIONS.map((track, idx) => {
           const isSelected = track.id === selectedTrackId;
           const themeGradient =
@@ -142,6 +142,10 @@ export const TrackSelect: React.FC<TrackSelectProps> = ({
               ? 'from-purple-900 to-emerald-900'
               : track.theme === 'cyber'
               ? 'from-cyan-900 to-pink-900'
+              : track.theme === 'volcano'
+              ? 'from-red-700 via-orange-600 to-amber-500'
+              : track.theme === 'sky'
+              ? 'from-indigo-600 via-sky-500 to-cyan-400'
               : 'from-blue-600 to-cyan-400';
 
           const themeIcon =
@@ -151,6 +155,10 @@ export const TrackSelect: React.FC<TrackSelectProps> = ({
               ? '🏰'
               : track.theme === 'cyber'
               ? '⚡'
+              : track.theme === 'volcano'
+              ? '🌋'
+              : track.theme === 'sky'
+              ? '☁️'
               : '❄️';
 
           return (
@@ -181,7 +189,19 @@ export const TrackSelect: React.FC<TrackSelectProps> = ({
                 </div>
 
                 <h3 className="font-black text-base text-white mb-1">{track.name}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed mb-4">{track.description}</p>
+                <p className="text-xs text-slate-400 leading-relaxed mb-2.5">{track.description}</p>
+
+                {/* Diverse Track Surfaces & Features */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {Array.from(new Set(getTrackSectors(track.theme).map(s => `${s.icon} ${s.name}`))).map((surf, sIdx) => (
+                    <span key={sIdx} className="text-[10px] bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700/60 text-slate-300 font-medium">
+                      {surf}
+                    </span>
+                  ))}
+                  <span className="text-[10px] bg-sky-950/70 px-1.5 py-0.5 rounded border border-sky-600/40 text-sky-300 font-medium">
+                    ⛰️ Tunnel & Kaljud
+                  </span>
+                </div>
               </div>
 
               {/* Stats */}

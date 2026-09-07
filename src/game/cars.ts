@@ -229,21 +229,18 @@ export function createToonCarMesh(
   // Underglow neon ground lighting
   if (customization?.underglow && customization.underglow !== 'none') {
     const ugColor = new THREE.Color(customization.underglow);
-    const glowGeo = new THREE.PlaneGeometry(1.9, 2.7);
+    const glowGeo = new THREE.PlaneGeometry(2.1, 2.9);
     const glowMat = new THREE.MeshBasicMaterial({
       color: ugColor,
       transparent: true,
-      opacity: 0.58,
+      opacity: 0.65,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
     const glowPlane = new THREE.Mesh(glowGeo, glowMat);
     glowPlane.rotation.x = Math.PI / 2;
     glowPlane.position.y = 0.08;
     root.add(glowPlane);
-
-    const glowLight = new THREE.PointLight(ugColor, 1.4, 4.5);
-    glowLight.position.set(0, 0.2, 0);
-    root.add(glowLight);
   }
 
   // Primary chassis base mesh
@@ -502,14 +499,10 @@ export function createToonCarMesh(
 
     sirenRed = new THREE.Mesh(
       new THREE.SphereGeometry(0.14, 12, 12),
-      new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 1.2 })
+      new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 1.4 })
     );
     sirenRed.position.set(0.32, 1.32, -0.15);
     bodyGroup.add(sirenRed);
-
-    sirenLight = new THREE.PointLight(0x3b82f6, 1.5, 6.0);
-    sirenLight.position.set(0, 1.5, -0.15);
-    bodyGroup.add(sirenLight);
   }
 
   // Cartoon Googly Headlights with Forward Projection Beams

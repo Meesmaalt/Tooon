@@ -15,6 +15,7 @@ class SoundManager {
 
   private sharedNoiseBuffer: AudioBuffer | null = null;
   private lastDriftTime: number = 0;
+  private lastItemBoxTime: number = 0;
 
   private isMuted: boolean = false;
   private volume: number = 0.70;
@@ -22,6 +23,21 @@ class SoundManager {
   private musicInterval: any = null;
 
   constructor() {}
+
+  /**
+   * Disconnects nodes when audio playback ends to prevent Web Audio memory leaks and GC stalls
+   */
+  private scheduleCleanup(source: AudioScheduledSourceNode, nodes: (AudioNode | null | undefined)[], stopTime: number) {
+    source.stop(stopTime);
+    source.onended = () => {
+      try {
+        source.disconnect();
+        for (let i = 0; i < nodes.length; i++) {
+          nodes[i]?.disconnect();
+        }
+      } catch (_) {}
+    };
+  }
 
   public init() {
     if (this.ctx) return;
@@ -148,13 +164,16 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + (isGo ? 0.65 : 0.35));
+    this.scheduleCleanup(osc, [gain], now + (isGo ? 0.65 : 0.35));
   }
 
   public playItemBox() {
     this.init();
     if (!this.ctx || !this.sfxGain) return;
     const now = this.ctx.currentTime;
+    if (now - this.lastItemBoxTime < 0.12) return;
+    this.lastItemBoxTime = now;
+
     // Pleasant 4-note cartoon bell chime
     const notes = [523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, idx) => {
@@ -170,7 +189,7 @@ class SoundManager {
       gain.connect(this.sfxGain);
 
       osc.start(now + idx * 0.05);
-      osc.stop(now + idx * 0.05 + 0.24);
+      this.scheduleCleanup(osc, [gain], now + idx * 0.05 + 0.24);
     });
   }
 
@@ -192,7 +211,7 @@ class SoundManager {
       gain.connect(this.sfxGain);
 
       osc.start(now + idx * 0.06);
-      osc.stop(now + idx * 0.06 + 0.32);
+      this.scheduleCleanup(osc, [gain], now + idx * 0.06 + 0.32);
     });
   }
 
@@ -213,7 +232,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.42);
+    this.scheduleCleanup(osc, [gain], now + 0.42);
   }
 
   public playExplosion() {
@@ -238,7 +257,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     noise.start(now);
-    noise.stop(now + 0.55);
+    this.scheduleCleanup(noise, [filter, gain], now + 0.55);
   }
 
   public playTurbo() {
@@ -258,7 +277,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.45);
+    this.scheduleCleanup(osc, [gain], now + 0.45);
   }
 
   public playShield() {
@@ -279,7 +298,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.42);
+    this.scheduleCleanup(osc, [gain], now + 0.42);
   }
 
   public playBump() {
@@ -300,7 +319,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.14);
+    this.scheduleCleanup(osc, [gain], now + 0.14);
   }
 
   public playBoing() {
@@ -321,7 +340,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.36);
+    this.scheduleCleanup(osc, [gain], now + 0.36);
   }
 
   public playLightning() {
@@ -341,7 +360,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.28);
+    this.scheduleCleanup(osc, [gain], now + 0.28);
   }
 
   public playRespawn() {
@@ -361,7 +380,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     osc.start(now);
-    osc.stop(now + 0.35);
+    this.scheduleCleanup(osc, [gain], now + 0.35);
   }
 
   public playDrift() {
@@ -389,7 +408,7 @@ class SoundManager {
     gain.connect(this.sfxGain);
 
     noise.start(now);
-    noise.stop(now + 0.21);
+    this.scheduleCleanup(noise, [filter, gain], now + 0.21);
   }
 
   public playHonk() {
@@ -410,7 +429,7 @@ class SoundManager {
       gain.connect(this.sfxGain);
 
       osc.start(now);
-      osc.stop(now + 0.3);
+      this.scheduleCleanup(osc, [gain], now + 0.3);
     });
   }
 
@@ -439,7 +458,7 @@ class SoundManager {
       gain.connect(this.sfxGain);
 
       osc.start(now + note.t);
-      osc.stop(now + note.t + note.d + 0.05);
+      this.scheduleCleanup(osc, [gain], now + note.t + note.d + 0.05);
     });
   }
 
@@ -470,17 +489,13 @@ class SoundManager {
         kickOsc.connect(kickGain);
         kickGain.connect(this.musicGain);
         kickOsc.start(now);
-        kickOsc.stop(now + 0.14);
+        this.scheduleCleanup(kickOsc, [kickGain], now + 0.14);
       }
 
-      // 2. Snare / Clack (steps 2, 6)
-      if (step % 4 === 2) {
-        const snareNoise = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.08, this.ctx.sampleRate);
-        const data = snareNoise.getChannelData(0);
-        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-
+      // 2. Snare / Clack (steps 2, 6) - Uses shared pre-allocated noise buffer (zero GC)
+      if (step % 4 === 2 && this.sharedNoiseBuffer) {
         const noiseSrc = this.ctx.createBufferSource();
-        noiseSrc.buffer = snareNoise;
+        noiseSrc.buffer = this.sharedNoiseBuffer;
 
         const snareFilter = this.ctx.createBiquadFilter();
         snareFilter.type = 'highpass';
@@ -494,16 +509,13 @@ class SoundManager {
         snareFilter.connect(snareGain);
         snareGain.connect(this.musicGain);
         noiseSrc.start(now);
+        this.scheduleCleanup(noiseSrc, [snareFilter, snareGain], now + 0.09);
       }
 
-      // 3. Hi-Hat on offbeats
-      if (step % 2 === 1) {
-        const hatNoise = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.03, this.ctx.sampleRate);
-        const data = hatNoise.getChannelData(0);
-        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-
+      // 3. Hi-Hat on offbeats - Uses shared pre-allocated noise buffer (zero GC)
+      if (step % 2 === 1 && this.sharedNoiseBuffer) {
         const noiseSrc = this.ctx.createBufferSource();
-        noiseSrc.buffer = hatNoise;
+        noiseSrc.buffer = this.sharedNoiseBuffer;
 
         const hatFilter = this.ctx.createBiquadFilter();
         hatFilter.type = 'highpass';
@@ -517,6 +529,7 @@ class SoundManager {
         hatFilter.connect(hatGain);
         hatGain.connect(this.musicGain);
         noiseSrc.start(now);
+        this.scheduleCleanup(noiseSrc, [hatFilter, hatGain], now + 0.04);
       }
 
       // 4. Bass note
@@ -529,7 +542,7 @@ class SoundManager {
       bassOsc.connect(bassGain);
       bassGain.connect(this.musicGain);
       bassOsc.start(now);
-      bassOsc.stop(now + 0.2);
+      this.scheduleCleanup(bassOsc, [bassGain], now + 0.2);
 
       // 5. Lead Melody note every other step
       if (step % 2 === 0) {
@@ -542,7 +555,7 @@ class SoundManager {
         leadOsc.connect(leadGain);
         leadGain.connect(this.musicGain);
         leadOsc.start(now);
-        leadOsc.stop(now + 0.32);
+        this.scheduleCleanup(leadOsc, [leadGain], now + 0.32);
       }
 
       step++;

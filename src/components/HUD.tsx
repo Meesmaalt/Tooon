@@ -18,6 +18,9 @@ interface HUDProps {
   currentLapTime?: number;
   bestLapTime?: number | null;
   driftCharge?: number;
+  currentSurface?: string;
+  surfaceName?: string;
+  surfaceIcon?: string;
   combatEvents: string[];
   countdownText: string | number;
   minimapData: {
@@ -55,6 +58,9 @@ export const HUD: React.FC<HUDProps> = ({
   currentLapTime = 0,
   bestLapTime = null,
   driftCharge = 0,
+  currentSurface,
+  surfaceName,
+  surfaceIcon,
   combatEvents,
   countdownText,
   minimapData,
@@ -66,6 +72,12 @@ export const HUD: React.FC<HUDProps> = ({
   onInputEnd,
 }) => {
   const minimapCanvasRef = useRef<HTMLCanvasElement>(null);
+  const trackBgCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const cachedPointsRef = useRef<{ x: number; z: number }[] | null>(null);
+  const cachedTransformRef = useRef<{
+    toCanvasX: (worldX: number) => number;
+    toCanvasY: (worldZ: number) => number;
+  } | null>(null);
   const [isMuted, setIsMuted] = React.useState(false);
 
   const toggleMute = () => {
@@ -73,7 +85,7 @@ export const HUD: React.FC<HUDProps> = ({
     setIsMuted(muted);
   };
 
-  // Draw 2D Top-Down Minimap Radar
+  // Draw 2D Top-Down Minimap Radar (optimized with cached static track background)
   useEffect(() => {
     const canvas = minimapCanvasRef.current;
     if (!canvas || !minimapData || minimapData.curvePoints.length === 0) return;
@@ -83,65 +95,88 @@ export const HUD: React.FC<HUDProps> = ({
 
     const width = canvas.width;
     const height = canvas.height;
+
+    // 1. Build or reuse cached static track background
+    if (cachedPointsRef.current !== minimapData.curvePoints || !trackBgCanvasRef.current) {
+      cachedPointsRef.current = minimapData.curvePoints;
+
+      const bgCanvas = document.createElement('canvas');
+      bgCanvas.width = width;
+      bgCanvas.height = height;
+      const bgCtx = bgCanvas.getContext('2d');
+
+      if (bgCtx) {
+        // Find bounds of track points
+        let minX = Infinity, maxX = -Infinity;
+        let minZ = Infinity, maxZ = -Infinity;
+        minimapData.curvePoints.forEach(p => {
+          if (p.x < minX) minX = p.x;
+          if (p.x > maxX) maxX = p.x;
+          if (p.z < minZ) minZ = p.z;
+          if (p.z > maxZ) maxZ = p.z;
+        });
+
+        const padding = 16;
+        const trackW = Math.max(10, maxX - minX);
+        const trackH = Math.max(10, maxZ - minZ);
+        const scale = Math.min((width - padding * 2) / trackW, (height - padding * 2) / trackH);
+
+        const toCanvasX = (worldX: number) => width / 2 + (worldX - (minX + maxX) / 2) * scale;
+        const toCanvasY = (worldZ: number) => height / 2 + (worldZ - (minZ + maxZ) / 2) * scale;
+        cachedTransformRef.current = { toCanvasX, toCanvasY };
+
+        // Draw track path ribbon
+        bgCtx.beginPath();
+        bgCtx.strokeStyle = '#334155';
+        bgCtx.lineWidth = 10;
+        bgCtx.lineCap = 'round';
+        bgCtx.lineJoin = 'round';
+        minimapData.curvePoints.forEach((p, idx) => {
+          const cx = toCanvasX(p.x);
+          const cy = toCanvasY(p.z);
+          if (idx === 0) bgCtx.moveTo(cx, cy);
+          else bgCtx.lineTo(cx, cy);
+        });
+        bgCtx.closePath();
+        bgCtx.stroke();
+
+        // Inner asphalt line
+        bgCtx.beginPath();
+        bgCtx.strokeStyle = '#64748b';
+        bgCtx.lineWidth = 5;
+        minimapData.curvePoints.forEach((p, idx) => {
+          const cx = toCanvasX(p.x);
+          const cy = toCanvasY(p.z);
+          if (idx === 0) bgCtx.moveTo(cx, cy);
+          else bgCtx.lineTo(cx, cy);
+        });
+        bgCtx.closePath();
+        bgCtx.stroke();
+
+        // Start line marker
+        const s0 = minimapData.curvePoints[0];
+        bgCtx.fillStyle = '#facc15';
+        bgCtx.beginPath();
+        bgCtx.arc(toCanvasX(s0.x), toCanvasY(s0.z), 4, 0, Math.PI * 2);
+        bgCtx.fill();
+      }
+
+      trackBgCanvasRef.current = bgCanvas;
+    }
+
+    // 2. Render frame: Blit cached background and draw racer blips (instant!)
     ctx.clearRect(0, 0, width, height);
+    if (trackBgCanvasRef.current) {
+      ctx.drawImage(trackBgCanvasRef.current, 0, 0);
+    }
 
-    // Find bounds of track points
-    let minX = Infinity, maxX = -Infinity;
-    let minZ = Infinity, maxZ = -Infinity;
-    minimapData.curvePoints.forEach(p => {
-      if (p.x < minX) minX = p.x;
-      if (p.x > maxX) maxX = p.x;
-      if (p.z < minZ) minZ = p.z;
-      if (p.z > maxZ) maxZ = p.z;
-    });
-
-    const padding = 16;
-    const trackW = Math.max(10, maxX - minX);
-    const trackH = Math.max(10, maxZ - minZ);
-    const scale = Math.min((width - padding * 2) / trackW, (height - padding * 2) / trackH);
-
-    const toCanvasX = (worldX: number) => width / 2 + (worldX - (minX + maxX) / 2) * scale;
-    const toCanvasY = (worldZ: number) => height / 2 + (worldZ - (minZ + maxZ) / 2) * scale;
-
-    // Draw track path ribbon
-    ctx.beginPath();
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 10;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    minimapData.curvePoints.forEach((p, idx) => {
-      const cx = toCanvasX(p.x);
-      const cy = toCanvasY(p.z);
-      if (idx === 0) ctx.moveTo(cx, cy);
-      else ctx.lineTo(cx, cy);
-    });
-    ctx.closePath();
-    ctx.stroke();
-
-    // Inner asphalt line
-    ctx.beginPath();
-    ctx.strokeStyle = '#64748b';
-    ctx.lineWidth = 5;
-    minimapData.curvePoints.forEach((p, idx) => {
-      const cx = toCanvasX(p.x);
-      const cy = toCanvasY(p.z);
-      if (idx === 0) ctx.moveTo(cx, cy);
-      else ctx.lineTo(cx, cy);
-    });
-    ctx.closePath();
-    ctx.stroke();
-
-    // Start line marker
-    const s0 = minimapData.curvePoints[0];
-    ctx.fillStyle = '#facc15';
-    ctx.beginPath();
-    ctx.arc(toCanvasX(s0.x), toCanvasY(s0.z), 4, 0, Math.PI * 2);
-    ctx.fill();
+    const transform = cachedTransformRef.current;
+    if (!transform) return;
 
     // Draw racers dots
     minimapData.racers.forEach(r => {
-      const rx = toCanvasX(r.x);
-      const ry = toCanvasY(r.z);
+      const rx = transform.toCanvasX(r.x);
+      const ry = transform.toCanvasY(r.z);
 
       if (r.isPlayer) {
         // Glowing animated player ring
@@ -224,6 +259,17 @@ export const HUD: React.FC<HUDProps> = ({
               </div>
             )}
           </div>
+
+          {/* Current Terrain / Road Surface Badge */}
+          {surfaceName && (
+            <div className="bg-slate-900/80 backdrop-blur-md border-2 border-slate-700/80 rounded-xl px-3 py-2 text-white shadow-lg hidden md:flex items-center gap-2 transition-all">
+              <span className="text-xl drop-shadow-sm">{surfaceIcon || '🛣️'}</span>
+              <div>
+                <div className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">PINNAS</div>
+                <div className="text-xs font-black text-amber-300 capitalize">{surfaceName}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Center: Wrong-Way Warning Banner */}

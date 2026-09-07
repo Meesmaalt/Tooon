@@ -4,11 +4,11 @@ import { TrackDefinition } from '../types';
 export const TRACK_DEFINITIONS: TrackDefinition[] = [
   {
     id: 'sunny_beach',
-    name: 'Päikeserand (Sunny Beach Island)',
+    name: 'Päikeserand (Sunny Beach Riviera)',
     theme: 'beach',
     difficulty: 'Easy',
-    description: 'Troopiline paradiisisaar looklevate palmide, liivaluidete, puusildade ja rannavarjudega!',
-    lengthMeters: 620,
+    description: 'Avar rannapromenaad, tehniline S-šikaan palmisalus, ookeanikalju tõus, rippsild üle abaja ja kaljukoobas!',
+    lengthMeters: 1480,
     lapsDefault: 3,
     skyColor: 0x60a5fa,
     fogColor: 0x93c5fd,
@@ -17,29 +17,53 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0xef4444,
     curbColorB: 0xf8fafc,
     points: [
+      // Pikk, lai ja sirge stardisirge piki ookeaniranda
       [0, 0, 0],
-      [40, 1, 80],
-      [90, 2, 140],
-      [160, 1, 160],
-      [220, 3, 110],
-      [230, 4, 30],
-      [190, 2, -50],
-      [130, 1, -110],
-      [50, 2, -130],
-      [-30, 3, -110],
-      [-100, 2, -60],
-      [-140, 1, 10],
-      [-120, 1, 80],
-      [-60, 0, 40],
+      [0, 0, 60],
+      [0, 0, 130],
+      // Kiire lauge paremkurv rannapromenaadile
+      [40, 0, 190],
+      [110, 0.5, 230],
+      [190, 1.5, 220],
+      // Tehniline S-šikaan läbi rannasalu
+      [240, 3, 160],
+      [220, 5, 90],
+      [250, 8, 20],
+      // Mäkketõus ookeanikaljule
+      [310, 15, -20],
+      [350, 22, 40],
+      [330, 25, 120],
+      // Puidust rippsild üle abaja
+      [270, 25, 170],
+      [190, 23, 185],
+      [120, 19, 160],
+      // Spiraalne laguunilaskumine
+      [65, 13, 100],
+      [45, 8, 30],
+      [80, 4, -30],
+      [135, 2, -70],
+      // Koobastunnel läbi rannakaljude
+      [160, 1, -130],
+      [130, 0.5, -190],
+      [60, 0, -220],
+      [-10, 0, -200],
+      // Rannakaar tagasi stardisirgele
+      [-70, 0, -150],
+      [-80, 0, -90],
+      [-50, 0, -40],
+      [-20, 0, -80],
+      // Sirge lähenemine stardijoonele
+      [0, 0, -110],
+      [0, 0, -50],
     ],
   },
   {
     id: 'spooky_castle',
-    name: 'Kummitusloss (Spooky Graveyard)',
+    name: 'Kummitusloss (Spooky Citadel & Catacombs)',
     theme: 'spooky',
     difficulty: 'Medium',
-    description: 'Öine munakivirada läbi kummitusliku kalmistu, vanade lossimüüride ja hõõguvate kõrvitsate!',
-    lengthMeters: 740,
+    description: 'Gooti stiilis 8-kujuline ringrada: kindlusemüüri serpentiin, kõrge kivisild otse üle stardisirge ja katakombid!',
+    lengthMeters: 1620,
     lapsDefault: 3,
     skyColor: 0x090d16,
     fogColor: 0x111827,
@@ -48,30 +72,51 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x8b5cf6,
     curbColorB: 0x22c55e,
     points: [
+      // Pikk ja sirge allee kalmistul
       [0, 0, 0],
-      [50, 0, 90],
-      [120, 3, 130],
-      [190, 6, 100],
-      [210, 8, 20],
-      [170, 5, -60],
-      [110, 2, -100],
-      [140, 4, -170],
-      [80, 2, -220],
-      [-20, 1, -210],
-      [-80, 4, -150],
-      [-140, 6, -80],
-      [-160, 4, 20],
-      [-110, 1, 100],
-      [-40, 0, 60],
+      [0, 0, 65],
+      [0, 0, 135],
+      // Vasakkurv kindluse eeshoovi
+      [-50, 0.5, 190],
+      [-120, 2, 210],
+      [-185, 4, 180],
+      // Serpentiintõus linnamüürile
+      [-230, 8, 110],
+      [-235, 14, 30],
+      [-195, 19, -40],
+      // Lossi sisehoov ja kõrge kivisild otse üle alloleva stardisirge!
+      [-130, 23, -70],
+      [-65, 25, -45],
+      [0, 25, 0],
+      [75, 24, 45],
+      [145, 22, 70],
+      [210, 18, 50],
+      // Spiraallaskumine lossikeldritesse ja katakombidesse
+      [240, 13, -15],
+      [215, 8, -85],
+      [150, 3, -140],
+      [80, 1, -165],
+      // Hüppemägi üle vana vallikraavi
+      [10, 3, -170],
+      [-60, 5, -190],
+      [-130, 2, -170],
+      // Käänuline läbisõit krüptide vahelt
+      [-160, 0.5, -115],
+      [-135, 0, -50],
+      [-75, 0, -75],
+      [-25, 0, -95],
+      // Sirge allee lähenemine stardile
+      [0, 0, -115],
+      [0, 0, -55],
     ],
   },
   {
     id: 'cyber_canyon',
-    name: 'Küberkanjon (Neon Cyber Canyon)',
+    name: 'Küberkanjon (Neon Cyber Grid)',
     theme: 'cyber',
     difficulty: 'Hard',
-    description: 'Futuristlik neoonrada kiirenduspatjade, laserite, hõljuvate rõngaste ja pulseerivate püramiididega!',
-    lengthMeters: 850,
+    description: 'GP stiilis küberrada: kiire neoonsirge, teravad linnasik-sakid, gravitatsioonisild kanjoni kohal ja laser-tunnel!',
+    lengthMeters: 1750,
     lapsDefault: 3,
     skyColor: 0x030712,
     fogColor: 0x0f172a,
@@ -80,32 +125,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x06b6d4,
     curbColorB: 0xf43f5e,
     points: [
+      // Suursugune sirge neoon-magistraal
       [0, 0, 0],
-      [60, 2, 70],
-      [80, 4, 150],
-      [150, 7, 200],
-      [220, 5, 170],
-      [250, 3, 70],
-      [210, 5, -20],
-      [240, 7, -110],
-      [190, 8, -190],
-      [100, 4, -220],
-      [10, 2, -180],
-      [-60, 5, -130],
-      [-130, 8, -170],
-      [-190, 6, -110],
-      [-170, 3, -20],
-      [-110, 1, 60],
-      [-50, 0, 30],
+      [0, 0, 70],
+      [0, 0, 145],
+      // Kiire topelt-apeksiga paremkurv
+      [55, 0.5, 205],
+      [140, 2, 235],
+      [220, 4, 200],
+      // Küber-šikaan (terav vasak-parem)
+      [250, 7, 130],
+      [225, 10, 65],
+      [260, 15, 5],
+      [305, 20, -35],
+      // Kõrge antigravitatsiooni viadukt kanjoni kohal
+      [280, 26, -110],
+      [215, 29, -175],
+      [130, 29, -200],
+      [40, 26, -185],
+      // Laser-tunneli laskumine kanjoni põhja
+      [-45, 19, -155],
+      [-115, 13, -125],
+      [-170, 7, -85],
+      // Kanjoni juuksenõelkurv
+      [-215, 3, -35],
+      [-230, 1.5, 25],
+      [-185, 1, 75],
+      [-125, 1, 60],
+      // Hüppesektsioon ja tagasitee
+      [-110, 3.5, 5],
+      [-140, 4, -60],
+      [-120, 1, -115],
+      [-60, 0, -125],
+      // Sirge magistraal enne starti
+      [0, 0, -120],
+      [0, 0, -60],
     ],
   },
   {
     id: 'frozen_peak',
-    name: 'Lumine Mäetipp (Frozen Peak)',
+    name: 'Lumine Mäetipp (Frozen Alpine Pass)',
     theme: 'ice',
     difficulty: 'Medium',
-    description: 'Lumme mattunud mäerada lumememmede, härmas kuuskede, jääkoobaste ja hiilgavate jääkristallidega!',
-    lengthMeters: 790,
+    description: 'Klassikaline alpi mäekuru: tõusvad juuksenõelad, jääkristallide sild, liustikukoobas ja suusalaskumine!',
+    lengthMeters: 1680,
     lapsDefault: 3,
     skyColor: 0x93c5fd,
     fogColor: 0xdbeafe,
@@ -114,21 +177,143 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x38bdf8,
     curbColorB: 0xffffff,
     points: [
+      // Pikk sirge lumine alpiorg
       [0, 0, 0],
-      [45, 2, 75],
-      [110, 5, 120],
-      [180, 8, 90],
-      [220, 6, 20],
-      [190, 4, -50],
-      [140, 7, -120],
-      [80, 5, -180],
-      [-10, 3, -200],
-      [-90, 6, -170],
-      [-150, 8, -100],
-      [-180, 5, -20],
-      [-150, 3, 50],
-      [-80, 1, 80],
-      [-30, 0, 40],
+      [0, 0, 65],
+      [0, 0, 135],
+      // Serpentiin 1 (laugev tõus)
+      [65, 3, 185],
+      [140, 8, 205],
+      [195, 13, 170],
+      // Juuksenõel mäenõlval
+      [170, 18, 105],
+      [115, 23, 60],
+      [75, 27, 85],
+      // Serpentiin 2 harjale
+      [85, 31, 150],
+      [140, 34, 190],
+      [215, 36, 155],
+      // Jääkristallide sild üle kuristiku
+      [265, 36, 80],
+      [270, 34, -5],
+      [235, 32, -80],
+      // Liustikukoobas
+      [170, 26, -145],
+      [95, 20, -185],
+      [15, 14, -190],
+      // Suusahüpe ja kiire laskuv S-kurv
+      [-65, 9, -165],
+      [-135, 5, -115],
+      [-175, 2.5, -40],
+      [-140, 1, 20],
+      // Tagasikaar orgu
+      [-90, 0.5, 0],
+      [-70, 0, -55],
+      [-30, 0, -85],
+      // Puhas sirge lähenemine stardile
+      [0, 0, -115],
+      [0, 0, -55],
+    ],
+  },
+  {
+    id: 'volcano_island',
+    name: 'Dino Vulkaan (Volcano Caldera & Lava Basin)',
+    theme: 'volcano',
+    difficulty: 'Hard',
+    description: 'Kraatriharja serpentiin, hõõguv laavasild, dinosauruse ribiluude tunnel ja kuumad tuhasik-sakid!',
+    lengthMeters: 1720,
+    lapsDefault: 3,
+    skyColor: 0x450a0a,
+    fogColor: 0x7f1d1d,
+    groundColor: 0x18181b,
+    trackColor: 0x27272a,
+    curbColorA: 0xf97316,
+    curbColorB: 0xef4444,
+    points: [
+      // Pikk sirge basaltlaava stardisirge
+      [0, 0, 0],
+      [0, 0, 65],
+      [0, 0, 135],
+      // Kraatrijalami kaar
+      [-65, 3, 185],
+      [-150, 8, 210],
+      [-225, 14, 180],
+      // Serpentiintõus kraatriservale
+      [-255, 20, 115],
+      [-230, 25, 40],
+      [-175, 29, -5],
+      // Kraatriserv hõõguva laava kohal
+      [-105, 30, -35],
+      [-20, 30, -55],
+      [65, 29, -45],
+      // Laavasild risti üle kraatri
+      [140, 28, -25],
+      [205, 26, 20],
+      [235, 21, 85],
+      // Dino ribiluude koobastunnel
+      [220, 16, 160],
+      [165, 11, 205],
+      [90, 7, 215],
+      // Laavakaljud ja tulepurske hüppemägi
+      [15, 3, 185],
+      [-35, 1.5, 130],
+      [-45, 4, 65],
+      [-10, 2, 5],
+      // Šikaan laavajõe ääres
+      [35, 1, -45],
+      [15, 0, -95],
+      [-15, 0, -125],
+      // Puhas sirge stardisirge
+      [0, 0, -115],
+      [0, 0, -55],
+    ],
+  },
+  {
+    id: 'sky_metropolis',
+    name: 'Taevalinn (Sky High Metropolis)',
+    theme: 'sky',
+    difficulty: 'Hard',
+    description: 'Futuristlik kiirtee pilvedes: spiraalne tornitõus, taevasild pilvede kohal ja mitmetasandiline aerotunnel!',
+    lengthMeters: 1850,
+    lapsDefault: 3,
+    skyColor: 0x38bdf8,
+    fogColor: 0xbae6fd,
+    groundColor: 0x0369a1,
+    trackColor: 0x0f172a,
+    curbColorA: 0x3b82f6,
+    curbColorB: 0xfacc15,
+    points: [
+      // Pikk sirge kiirtee pilvedes
+      [0, 8, 0],
+      [0, 8, 70],
+      [0, 8, 145],
+      // Kiire tõus pilvelõhkuja suunas
+      [65, 10, 215],
+      [150, 15, 245],
+      [235, 21, 220],
+      // Spiraaltõus torni tippu
+      [285, 27, 155],
+      [295, 33, 80],
+      [260, 38, 5],
+      [195, 41, -45],
+      // Hõljuv klaasist taevasild pilvede kohal
+      [110, 41, -85],
+      [15, 39, -115],
+      [-80, 36, -115],
+      // Laskuv silmus üle teise teelõigu
+      [-160, 30, -80],
+      [-200, 23, -25],
+      [-185, 17, 45],
+      [-120, 13, 85],
+      // Aerotunnel tornide vahel
+      [-45, 10, 85],
+      [15, 9, 50],
+      [45, 8.5, -5],
+      [25, 8, -55],
+      [-25, 8, -95],
+      // Puhas sirge stardisirge
+      [0, 8, -125],
+      [0, 8, -60],
     ],
   },
 ];
@@ -157,6 +342,25 @@ export interface CenterlinePoint {
   t: number;
 }
 
+export type RoadSurfaceType =
+  | 'asphalt'
+  | 'wood'
+  | 'cobblestone'
+  | 'sand'
+  | 'dirt'
+  | 'ice'
+  | 'magma_rock'
+  | 'glass'
+  | 'cyber_grid';
+
+export interface SurfaceSector {
+  startT: number;
+  endT: number;
+  surface: RoadSurfaceType;
+  name: string;
+  icon: string;
+}
+
 export interface TrackInfo {
   closestPoint: THREE.Vector3;
   tangent: THREE.Vector3;
@@ -168,6 +372,9 @@ export interface TrackInfo {
   isOnCurb: boolean;
   isWallHit: boolean;
   wallNormal: THREE.Vector3;
+  surface: RoadSurfaceType;
+  surfaceName: string;
+  surfaceIcon: string;
 }
 
 export interface TrackData {
@@ -179,12 +386,68 @@ export interface TrackData {
   itemBoxes: ItemBoxPosition[];
   boostPads: BoostPadPosition[];
   decorations: THREE.Group;
-  trackMesh: THREE.Mesh;
+  trackMesh: THREE.Object3D;
   curbsMesh: THREE.Group;
   wallsMesh: THREE.Group;
   startArch: THREE.Group;
   theme: TrackDefinition['theme'];
   waterMesh?: THREE.Mesh;
+}
+
+/**
+ * Returns distinct surface zones along each track for terrain variety
+ */
+export function getTrackSectors(theme: TrackDefinition['theme']): SurfaceSector[] {
+  switch (theme) {
+    case 'beach':
+      return [
+        { startT: 0.00, endT: 0.25, surface: 'asphalt', name: 'Rannatee', icon: '🛣️' },
+        { startT: 0.25, endT: 0.44, surface: 'wood', name: 'Puidust Rippsild', icon: '🪵' },
+        { startT: 0.44, endT: 0.62, surface: 'dirt', name: 'Merikoobas', icon: '🪨' },
+        { startT: 0.62, endT: 0.82, surface: 'sand', name: 'Kuldrand', icon: '🏖️' },
+        { startT: 0.82, endT: 1.00, surface: 'asphalt', name: 'Tuletorni Sirge', icon: '🛣️' },
+      ];
+    case 'spooky':
+      return [
+        { startT: 0.00, endT: 0.22, surface: 'cobblestone', name: 'Kalmistu Munakivitee', icon: '🪨' },
+        { startT: 0.22, endT: 0.42, surface: 'asphalt', name: 'Lossi Sisehoov', icon: '🏰' },
+        { startT: 0.42, endT: 0.60, surface: 'dirt', name: 'Lossikeldri Krüpt', icon: '🕯️' },
+        { startT: 0.60, endT: 0.78, surface: 'wood', name: 'Vana Tõstesild', icon: '🪵' },
+        { startT: 0.78, endT: 1.00, surface: 'cobblestone', name: 'Gooti Munakivisirge', icon: '🪨' },
+      ];
+    case 'cyber':
+      return [
+        { startT: 0.00, endT: 0.24, surface: 'asphalt', name: 'Kübermagistraal', icon: '⚡' },
+        { startT: 0.24, endT: 0.44, surface: 'glass', name: 'Holo-Klaassild', icon: '💎' },
+        { startT: 0.44, endT: 0.62, surface: 'cyber_grid', name: 'Laser-Hüpertunnel', icon: '🌀' },
+        { startT: 0.62, endT: 0.82, surface: 'wood', name: 'Titaani Võrestik', icon: '⛓️' },
+        { startT: 0.82, endT: 1.00, surface: 'asphalt', name: 'Neoonsirge', icon: '⚡' },
+      ];
+    case 'ice':
+      return [
+        { startT: 0.00, endT: 0.24, surface: 'dirt', name: 'Lumitee Pass', icon: '❄️' },
+        { startT: 0.24, endT: 0.44, surface: 'ice', name: 'Libe Liustikujää', icon: '⛸️' },
+        { startT: 0.44, endT: 0.62, surface: 'ice', name: 'Liustikukoobas', icon: '🧊' },
+        { startT: 0.62, endT: 0.80, surface: 'wood', name: 'Külmunud Puutsild', icon: '🪵' },
+        { startT: 0.80, endT: 1.00, surface: 'dirt', name: 'Suusalaskumise Sirge', icon: '❄️' },
+      ];
+    case 'volcano':
+      return [
+        { startT: 0.00, endT: 0.24, surface: 'asphalt', name: 'Tuhatee', icon: '🌋' },
+        { startT: 0.24, endT: 0.42, surface: 'magma_rock', name: 'Basaltsild Laava Kohal', icon: '🔥' },
+        { startT: 0.42, endT: 0.60, surface: 'dirt', name: 'Dino Luukere & Laavatunnel', icon: '🦴' },
+        { startT: 0.60, endT: 0.80, surface: 'magma_rock', name: 'Hõõguv Laavakillustik', icon: '☄️' },
+        { startT: 0.80, endT: 1.00, surface: 'asphalt', name: 'Kraatri Finiš', icon: '🌋' },
+      ];
+    case 'sky':
+      return [
+        { startT: 0.00, endT: 0.24, surface: 'asphalt', name: 'Taevalinnaku Kiirtee', icon: '☁️' },
+        { startT: 0.24, endT: 0.44, surface: 'glass', name: 'Läbipaistev Klaassild', icon: '💎' },
+        { startT: 0.44, endT: 0.62, surface: 'glass', name: 'Pilve-Aerotunnel', icon: '🚀' },
+        { startT: 0.62, endT: 0.82, surface: 'cyber_grid', name: 'Päikesepaneelide Sild', icon: '☀️' },
+        { startT: 0.82, endT: 1.00, surface: 'asphalt', name: 'Pilvetippude Finiš', icon: '☁️' },
+      ];
+  }
 }
 
 /**
@@ -213,7 +476,7 @@ function createAsphaltTexture(trackColor: number, theme: TrackDefinition['theme'
   ctx.putImageData(imgData, 0, 0);
 
   // Outer solid boundary lines
-  const edgeColor = theme === 'cyber' ? '#06b6d4' : (theme === 'ice' ? '#bae6fd' : '#ffffff');
+  const edgeColor = theme === 'cyber' ? '#06b6d4' : (theme === 'ice' ? '#bae6fd' : (theme === 'volcano' ? '#f97316' : (theme === 'sky' ? '#38bdf8' : '#ffffff')));
   ctx.strokeStyle = edgeColor;
   ctx.lineWidth = 14;
   ctx.beginPath();
@@ -227,7 +490,7 @@ function createAsphaltTexture(trackColor: number, theme: TrackDefinition['theme'
   ctx.stroke();
 
   // Center dashed dividing line
-  const centerColor = theme === 'cyber' ? '#f43f5e' : (theme === 'spooky' ? '#a855f7' : '#facc15');
+  const centerColor = theme === 'cyber' ? '#f43f5e' : (theme === 'spooky' ? '#a855f7' : (theme === 'volcano' ? '#ef4444' : '#facc15'));
   ctx.strokeStyle = centerColor;
   ctx.lineWidth = 10;
   ctx.setLineDash([34, 30]);
@@ -240,6 +503,356 @@ function createAsphaltTexture(trackColor: number, theme: TrackDefinition['theme'
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(1, 40);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates rich wooden bridge planks texture
+ */
+function createWoodTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  ctx.fillStyle = '#78350f';
+  ctx.fillRect(0, 0, 512, 512);
+
+  const plankHeight = 32;
+  for (let y = 0; y < 512; y += plankHeight) {
+    const shade = (y / plankHeight) % 3;
+    ctx.fillStyle = shade === 0 ? '#92400e' : (shade === 1 ? '#854d0e' : '#713f12');
+    ctx.fillRect(0, y + 2, 512, plankHeight - 4);
+
+    // Seam line
+    ctx.fillStyle = '#291705';
+    ctx.fillRect(0, y, 512, 3);
+
+    // Grain
+    ctx.strokeStyle = 'rgba(67, 20, 7, 0.4)';
+    ctx.lineWidth = 1;
+    for (let g = 0; g < 3; g++) {
+      ctx.beginPath();
+      ctx.moveTo(0, y + 6 + g * 8);
+      ctx.bezierCurveTo(150, y + 4 + g * 8, 350, y + 8 + g * 8, 512, y + 6 + g * 8);
+      ctx.stroke();
+    }
+
+    // Iron rivets
+    ctx.fillStyle = '#1c1917';
+    [40, 256, 472].forEach(rx => {
+      ctx.beginPath();
+      ctx.arc(rx, y + plankHeight / 2, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 40);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates historic cobblestone paver road texture
+ */
+function createCobblestoneTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(0, 0, 512, 512);
+
+  const rowH = 28;
+  const colW = 36;
+  const stoneColors = ['#475569', '#64748b', '#334155', '#4b5563', '#374151'];
+
+  for (let y = 0; y < 512; y += rowH) {
+    const rowIdx = Math.floor(y / rowH);
+    const offsetX = (rowIdx % 2) * (colW / 2);
+    for (let x = -colW; x < 512 + colW; x += colW) {
+      const col = stoneColors[Math.abs(Math.floor(x * 7 + y * 13)) % stoneColors.length];
+      ctx.fillStyle = col;
+      const stoneX = x + offsetX + 3;
+      const stoneY = y + 3;
+      const stoneW = colW - 6;
+      const stoneH = rowH - 6;
+      ctx.beginPath();
+      ctx.rect(stoneX, stoneY, stoneW, stoneH);
+      ctx.fill();
+
+      // Highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.fillRect(stoneX + 2, stoneY + 2, stoneW - 4, 3);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 35);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates sunny beach sand road texture
+ */
+function createSandTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  ctx.fillStyle = '#fde047';
+  ctx.fillRect(0, 0, 512, 512);
+
+  ctx.fillStyle = '#eab308';
+  for (let y = 0; y < 512; y += 18) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.bezierCurveTo(120, y + 8, 380, y - 8, 512, y);
+    ctx.lineTo(512, y + 4);
+    ctx.bezierCurveTo(380, y - 4, 120, y + 12, 0, y + 4);
+    ctx.fill();
+  }
+
+  // Tire track grooves
+  ctx.fillStyle = 'rgba(161, 98, 7, 0.3)';
+  for (let y = 0; y < 512; y += 8) {
+    ctx.fillRect(100, y, 40, 4);
+    ctx.fillRect(512 - 140, y, 40, 4);
+  }
+
+  // Shell flecks
+  ctx.fillStyle = '#ffffff';
+  for (let i = 0; i < 45; i++) {
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 2.5, 2.5);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 40);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates crystal blue ice surface texture
+ */
+function createIceTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  const grad = ctx.createLinearGradient(0, 0, 512, 512);
+  grad.addColorStop(0, '#0284c7');
+  grad.addColorStop(0.5, '#38bdf8');
+  grad.addColorStop(1, '#0ea5e9');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 512);
+
+  // White fracture lines
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    let sx = Math.random() * 512;
+    let sy = Math.random() * 512;
+    ctx.moveTo(sx, sy);
+    for (let k = 0; k < 4; k++) {
+      sx += (Math.random() - 0.5) * 80;
+      sy += (Math.random() - 0.5) * 80;
+      ctx.lineTo(sx, sy);
+    }
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.fillRect(80, 0, 25, 512);
+  ctx.fillRect(340, 0, 35, 512);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 40);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates cracked molten magma rock surface texture
+ */
+function createMagmaTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  ctx.fillStyle = '#18181b';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Molten lava fissures
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 6;
+  for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    let mx = Math.random() * 512;
+    let my = Math.random() * 512;
+    ctx.moveTo(mx, my);
+    for (let j = 0; j < 4; j++) {
+      mx += (Math.random() - 0.5) * 110;
+      my += (Math.random() - 0.5) * 110;
+      ctx.lineTo(mx, my);
+    }
+    ctx.stroke();
+  }
+
+  // White-hot center
+  ctx.strokeStyle = '#fef08a';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 10; i++) {
+    ctx.beginPath();
+    let mx = Math.random() * 512;
+    let my = Math.random() * 512;
+    ctx.moveTo(mx, my);
+    for (let j = 0; j < 3; j++) {
+      mx += (Math.random() - 0.5) * 80;
+      my += (Math.random() - 0.5) * 80;
+      ctx.lineTo(mx, my);
+    }
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 35);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates cyber futuristic glowing grid glass road texture
+ */
+function createCyberGlassTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  ctx.fillStyle = '#090d16';
+  ctx.fillRect(0, 0, 512, 512);
+
+  ctx.strokeStyle = '#06b6d4';
+  ctx.lineWidth = 3;
+  for (let x = 0; x <= 512; x += 64) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, 512);
+    ctx.stroke();
+  }
+  for (let y = 0; y <= 512; y += 64) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(512, y);
+    ctx.stroke();
+  }
+
+  // Pulsing chevrons
+  ctx.fillStyle = '#ec4899';
+  for (let y = 32; y < 512; y += 128) {
+    ctx.beginPath();
+    ctx.moveTo(256, y);
+    ctx.lineTo(276, y + 22);
+    ctx.lineTo(266, y + 22);
+    ctx.lineTo(256, y + 10);
+    ctx.lineTo(246, y + 22);
+    ctx.lineTo(236, y + 22);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 40);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates dirt gravel / cave trail road texture
+ */
+function createDirtTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  ctx.fillStyle = '#451a03';
+  ctx.fillRect(0, 0, 512, 512);
+
+  ctx.fillStyle = '#78350f';
+  for (let i = 0; i < 160; i++) {
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 3 + Math.random() * 5, 3 + Math.random() * 5);
+  }
+
+  ctx.fillStyle = 'rgba(24, 9, 2, 0.4)';
+  ctx.fillRect(80, 0, 65, 512);
+  ctx.fillRect(512 - 145, 0, 65, 512);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 40);
+  texture.anisotropy = 8;
+  return texture;
+}
+
+/**
+ * Creates natural road shoulder / verge texture
+ */
+function createShoulderTexture(theme: TrackDefinition['theme']): THREE.CanvasTexture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return new THREE.CanvasTexture(canvas);
+
+  const baseCol =
+    theme === 'beach' ? '#ca8a04' :
+    theme === 'spooky' ? '#1c1917' :
+    theme === 'cyber' ? '#0f172a' :
+    theme === 'ice' ? '#e0f2fe' :
+    theme === 'volcano' ? '#27272a' : '#0369a1';
+
+  ctx.fillStyle = baseCol;
+  ctx.fillRect(0, 0, 128, 256);
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+  for (let i = 0; i < 120; i++) {
+    ctx.fillRect(Math.random() * 128, Math.random() * 256, 3, 3);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 50);
   texture.anisotropy = 8;
   return texture;
 }
@@ -383,6 +996,345 @@ function createDistanceSignTexture(distText: string, stripes: number): THREE.Can
 }
 
 /**
+ * Creates 3D walk-through tunnel geometry with arches, portal entrances, ceiling details, and interior lighting
+ */
+function createTunnel(
+  curve: THREE.CatmullRomCurve3,
+  theme: TrackDefinition['theme'],
+  trackWidth: number
+): THREE.Group {
+  const tunnelGroup = new THREE.Group();
+
+  let startT = 0.44;
+  let endT = 0.62;
+  let wallColor = 0x573a24;
+  let portalColor = 0x78350f;
+  let lightColor = 0xf59e0b;
+  const lightIntensity = 1.6;
+
+  switch (theme) {
+    case 'beach':
+      startT = 0.44;
+      endT = 0.62;
+      wallColor = 0x78350f;
+      portalColor = 0x92400e;
+      lightColor = 0xf59e0b;
+      break;
+    case 'spooky':
+      startT = 0.42;
+      endT = 0.60;
+      wallColor = 0x1e293b;
+      portalColor = 0x0f172a;
+      lightColor = 0x10b981;
+      break;
+    case 'cyber':
+      startT = 0.44;
+      endT = 0.62;
+      wallColor = 0x090d16;
+      portalColor = 0x06b6d4;
+      lightColor = 0x06b6d4;
+      break;
+    case 'ice':
+      startT = 0.44;
+      endT = 0.62;
+      wallColor = 0x0284c7;
+      portalColor = 0x38bdf8;
+      lightColor = 0x38bdf8;
+      break;
+    case 'volcano':
+      startT = 0.42;
+      endT = 0.60;
+      wallColor = 0x18181b;
+      portalColor = 0xef4444;
+      lightColor = 0xf97316;
+      break;
+    case 'sky':
+      startT = 0.44;
+      endT = 0.62;
+      wallColor = 0x0369a1;
+      portalColor = 0x38bdf8;
+      lightColor = 0xe0f2fe;
+      break;
+  }
+
+  const upVec = new THREE.Vector3(0, 1, 0);
+  const steps = 36;
+  const tunnelWidth = trackWidth + 4.5;
+  const tunnelHeight = 8.8;
+
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const uvs: number[] = [];
+
+  const profileOffsets = [
+    { x: -tunnelWidth * 0.5, y: 0 },
+    { x: -tunnelWidth * 0.54, y: tunnelHeight * 0.45 },
+    { x: -tunnelWidth * 0.35, y: tunnelHeight * 0.88 },
+    { x: 0, y: tunnelHeight },
+    { x: tunnelWidth * 0.35, y: tunnelHeight * 0.88 },
+    { x: tunnelWidth * 0.54, y: tunnelHeight * 0.45 },
+    { x: tunnelWidth * 0.5, y: 0 },
+  ];
+  const numProfilePts = profileOffsets.length;
+
+  for (let s = 0; s <= steps; s++) {
+    const t = startT + (endT - startT) * (s / steps);
+    const pt = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t).normalize();
+    const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
+    const up = new THREE.Vector3().crossVectors(right, tangent).normalize();
+
+    for (let p = 0; p < numProfilePts; p++) {
+      const prof = profileOffsets[p];
+      const vert = pt.clone()
+        .addScaledVector(right, prof.x)
+        .addScaledVector(up, prof.y);
+      positions.push(vert.x, vert.y, vert.z);
+      uvs.push(p / (numProfilePts - 1), (s / steps) * 10);
+    }
+
+    if (s < steps) {
+      for (let p = 0; p < numProfilePts - 1; p++) {
+        const i0 = s * numProfilePts + p;
+        const i1 = i0 + 1;
+        const i2 = (s + 1) * numProfilePts + p;
+        const i3 = i2 + 1;
+        indices.push(i0, i2, i1);
+        indices.push(i1, i2, i3);
+      }
+    }
+
+    // Interior lights and ribs
+    if (s > 0 && s < steps && s % 6 === 0) {
+      const lightPos = pt.clone().addScaledVector(up, tunnelHeight * 0.75);
+      const ptLight = new THREE.PointLight(lightColor, lightIntensity, 45, 1.2);
+      ptLight.position.copy(lightPos);
+      tunnelGroup.add(ptLight);
+
+      const lampGeo = new THREE.SphereGeometry(0.5, 8, 8);
+      const lampMat = new THREE.MeshBasicMaterial({ color: lightColor });
+      const lampMesh = new THREE.Mesh(lampGeo, lampMat);
+      lampMesh.position.copy(lightPos);
+      tunnelGroup.add(lampMesh);
+
+      if (theme === 'volcano') {
+        const ribGeo = new THREE.TorusGeometry(tunnelWidth * 0.48, 0.45, 6, 16, Math.PI);
+        const ribMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.8 });
+        const ribMesh = new THREE.Mesh(ribGeo, ribMat);
+        ribMesh.position.copy(pt).addScaledVector(up, 1.5);
+        ribMesh.rotation.y = Math.atan2(tangent.x, tangent.z);
+        tunnelGroup.add(ribMesh);
+      } else if (theme === 'cyber') {
+        const ringGeo = new THREE.TorusGeometry(tunnelWidth * 0.5, 0.35, 6, 24, Math.PI);
+        const ringMat = new THREE.MeshBasicMaterial({ color: s % 12 === 0 ? 0x06b6d4 : 0xf43f5e });
+        const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+        ringMesh.position.copy(pt).addScaledVector(up, 1.0);
+        ringMesh.rotation.y = Math.atan2(tangent.x, tangent.z);
+        tunnelGroup.add(ringMesh);
+      } else if (theme === 'spooky') {
+        const archGeo = new THREE.TorusGeometry(tunnelWidth * 0.48, 0.5, 6, 16, Math.PI);
+        const archMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+        const archMesh = new THREE.Mesh(archGeo, archMat);
+        archMesh.position.copy(pt).addScaledVector(up, 1.0);
+        archMesh.rotation.y = Math.atan2(tangent.x, tangent.z);
+        tunnelGroup.add(archMesh);
+      } else if (theme === 'ice') {
+        for (let ic = -3; ic <= 3; ic += 2) {
+          const icicleGeo = new THREE.ConeGeometry(0.35, 2.2, 5);
+          icicleGeo.rotateX(Math.PI);
+          const icicleMat = new THREE.MeshStandardMaterial({ color: 0xe0f2fe, roughness: 0.1, metalness: 0.3 });
+          const icicleMesh = new THREE.Mesh(icicleGeo, icicleMat);
+          icicleMesh.position.copy(pt).addScaledVector(right, ic * 2.2).addScaledVector(up, tunnelHeight - 1.1);
+          tunnelGroup.add(icicleMesh);
+        }
+      }
+    }
+  }
+
+  const tunnelGeo = new THREE.BufferGeometry();
+  tunnelGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  tunnelGeo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  tunnelGeo.setIndex(indices);
+  tunnelGeo.computeVertexNormals();
+
+  const tunnelMat = new THREE.MeshStandardMaterial({
+    color: wallColor,
+    roughness: theme === 'ice' || theme === 'sky' ? 0.3 : 0.85,
+    metalness: theme === 'cyber' || theme === 'sky' ? 0.4 : 0.1,
+    side: THREE.DoubleSide,
+  });
+  const tunnelMesh = new THREE.Mesh(tunnelGeo, tunnelMat);
+  tunnelMesh.castShadow = true;
+  tunnelMesh.receiveShadow = true;
+  tunnelGroup.add(tunnelMesh);
+
+  // Entrance and Exit Architectural Portals
+  [startT, endT].forEach((portalT, pIdx) => {
+    const pt = curve.getPointAt(portalT);
+    const tangent = curve.getTangentAt(portalT).normalize();
+    const rotY = Math.atan2(tangent.x, tangent.z);
+
+    const portalFrame = new THREE.Group();
+    portalFrame.position.copy(pt);
+    portalFrame.rotation.y = rotY;
+
+    const pillarGeo = new THREE.BoxGeometry(2.4, tunnelHeight + 2, 3.2);
+    const pMat = new THREE.MeshStandardMaterial({ color: portalColor, roughness: 0.8, metalness: 0.2 });
+
+    const pLeft = new THREE.Mesh(pillarGeo, pMat);
+    pLeft.position.set(-tunnelWidth * 0.5 - 1.0, (tunnelHeight + 2) * 0.5, 0);
+    portalFrame.add(pLeft);
+
+    const pRight = new THREE.Mesh(pillarGeo, pMat);
+    pRight.position.set(tunnelWidth * 0.5 + 1.0, (tunnelHeight + 2) * 0.5, 0);
+    portalFrame.add(pRight);
+
+    const beamGeo = new THREE.BoxGeometry(tunnelWidth + 4.8, 2.2, 3.6);
+    const beam = new THREE.Mesh(beamGeo, pMat);
+    beam.position.set(0, tunnelHeight + 1.8, 0);
+    portalFrame.add(beam);
+
+    if (theme === 'volcano' && pIdx === 0) {
+      const skullGeo = new THREE.ConeGeometry(3.5, 6, 5);
+      skullGeo.rotateX(Math.PI / 2);
+      const skullMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.7 });
+      const skull = new THREE.Mesh(skullGeo, skullMat);
+      skull.position.set(0, tunnelHeight + 3.8, 0);
+      portalFrame.add(skull);
+    }
+
+    tunnelGroup.add(portalFrame);
+  });
+
+  return tunnelGroup;
+}
+
+/**
+ * Creates massive, towering multi-tiered 3D rock cliff formations flanking turns and canyon passes
+ */
+function createCliffs(
+  curve: THREE.CatmullRomCurve3,
+  theme: TrackDefinition['theme'],
+  trackWidth: number
+): THREE.Group {
+  const cliffsGroup = new THREE.Group();
+
+  let cliffColor = 0x78350f;
+  let cliffRoughness = 0.9;
+  let cliffMetalness = 0.1;
+
+  switch (theme) {
+    case 'beach':
+      cliffColor = 0xd97706;
+      break;
+    case 'spooky':
+      cliffColor = 0x1e293b;
+      break;
+    case 'cyber':
+      cliffColor = 0x0f172a;
+      cliffMetalness = 0.5;
+      break;
+    case 'ice':
+      cliffColor = 0x0284c7;
+      cliffRoughness = 0.2;
+      cliffMetalness = 0.4;
+      break;
+    case 'volcano':
+      cliffColor = 0x18181b;
+      break;
+    case 'sky':
+      cliffColor = 0x0369a1;
+      break;
+  }
+
+  const cliffMat = new THREE.MeshStandardMaterial({
+    color: cliffColor,
+    roughness: cliffRoughness,
+    metalness: cliffMetalness,
+    flatShading: true,
+  });
+
+  const upVec = new THREE.Vector3(0, 1, 0);
+
+  const cliffRanges = [
+    { startT: 0.08, endT: 0.32, side: 1, height: 28, offset: trackWidth * 0.5 + 4.5 },
+    { startT: 0.68, endT: 0.90, side: -1, height: 34, offset: trackWidth * 0.5 + 4.5 },
+  ];
+
+  cliffRanges.forEach(cr => {
+    const numSections = 20;
+    const positions: number[] = [];
+    const indices: number[] = [];
+
+    for (let i = 0; i <= numSections; i++) {
+      const t = cr.startT + (cr.endT - cr.startT) * (i / numSections);
+      const pt = curve.getPointAt(t);
+      const tangent = curve.getTangentAt(t).normalize();
+      const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
+
+      const baseSideDist = cr.side * cr.offset;
+      const noiseH = Math.sin(i * 1.7) * 4.0;
+      const h = cr.height + noiseH;
+
+      const v0 = pt.clone().addScaledVector(right, baseSideDist);
+      const v1 = pt.clone().addScaledVector(right, baseSideDist + cr.side * 4.0).add(new THREE.Vector3(0, h * 0.45, 0));
+      const v2 = pt.clone().addScaledVector(right, baseSideDist + cr.side * 8.0).add(new THREE.Vector3(0, h * 0.80, 0));
+      const v3 = pt.clone().addScaledVector(right, baseSideDist + cr.side * 14.0).add(new THREE.Vector3(0, h, 0));
+
+      positions.push(v0.x, v0.y, v0.z);
+      positions.push(v1.x, v1.y, v1.z);
+      positions.push(v2.x, v2.y, v2.z);
+      positions.push(v3.x, v3.y, v3.z);
+
+      if (i < numSections) {
+        for (let v = 0; v < 3; v++) {
+          const idx0 = i * 4 + v;
+          const idx1 = idx0 + 1;
+          const idx2 = (i + 1) * 4 + v;
+          const idx3 = idx2 + 1;
+
+          if (cr.side > 0) {
+            indices.push(idx0, idx1, idx2);
+            indices.push(idx1, idx3, idx2);
+          } else {
+            indices.push(idx0, idx2, idx1);
+            indices.push(idx1, idx2, idx3);
+          }
+        }
+      }
+
+      if (i % 3 === 0) {
+        const rockGeo = new THREE.DodecahedronGeometry(3.5 + Math.random() * 2.5, 0);
+        const rockMesh = new THREE.Mesh(rockGeo, cliffMat);
+        rockMesh.position.copy(v2).add(new THREE.Vector3((Math.random() - 0.5) * 2, 1, (Math.random() - 0.5) * 2));
+        rockMesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+        cliffsGroup.add(rockMesh);
+
+        if (theme === 'volcano') {
+          const lavaGeo = new THREE.PlaneGeometry(1.2, h * 0.6);
+          const lavaMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+          const lavaMesh = new THREE.Mesh(lavaGeo, lavaMat);
+          lavaMesh.position.copy(v1).add(new THREE.Vector3(0, 0, 0));
+          cliffsGroup.add(lavaMesh);
+        }
+      }
+    }
+
+    const cliffGeo = new THREE.BufferGeometry();
+    cliffGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    cliffGeo.setIndex(indices);
+    cliffGeo.computeVertexNormals();
+
+    const cliffMesh = new THREE.Mesh(cliffGeo, cliffMat);
+    cliffMesh.castShadow = true;
+    cliffMesh.receiveShadow = true;
+    cliffsGroup.add(cliffMesh);
+  });
+
+  return cliffsGroup;
+}
+
+/**
  * Builds the complete 3D racing track with rich scenery, asphalt markings, dense centerline, and robust collision detection
  */
 export function buildTrack(trackDef: TrackDefinition): TrackData {
@@ -405,13 +1357,17 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     return origGetTangentAt(safeU, optionalTarget);
   };
 
-  // Roomy track width for exciting high-speed cartoon racing
-  const trackWidth = 16.0;
+  // Generous roomy track width for exciting high-speed cartoon racing
+  const trackWidth = 22.0;
   const halfW = trackWidth * 0.5;
-  const curbW = 1.6;
+  const curbW = 2.4;
+  const shoulderW = 5.0;
 
-  // Build dense centerline (360 points along spline) for accurate physics
-  const denseCount = 360;
+  // Track surface sectors for dynamic terrain transitions
+  const sectors = getTrackSectors(trackDef.theme);
+
+  // Build dense centerline (520 points along spline) for accurate physics on long multi-level tracks
+  const denseCount = 520;
   const centerlinePoints: CenterlinePoint[] = [];
   const upVec = new THREE.Vector3(0, 1, 0);
 
@@ -433,21 +1389,43 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const _tmpToPos = new THREE.Vector3();
   const _tmpCandidate = new THREE.Vector3();
   const _tmpToCar = new THREE.Vector3();
+  const _resClosestPt = new THREE.Vector3();
+  const _resTangent = new THREE.Vector3();
+  const _resRight = new THREE.Vector3();
+  const _resWallNormal = new THREE.Vector3();
+  const _cachedTrackInfo: TrackInfo = {
+    closestPoint: _resClosestPt,
+    tangent: _resTangent,
+    right: _resRight,
+    distanceToCenter: 0,
+    signedDistance: 0,
+    t: 0,
+    isOffroad: false,
+    isOnCurb: false,
+    isWallHit: false,
+    wallNormal: _resWallNormal,
+    surface: 'asphalt',
+    surfaceName: 'Rannatee',
+    surfaceIcon: '🛣️',
+  };
 
-  // High-accuracy continuous track query helper
+  // High-accuracy continuous 3D multi-level track query helper
   const getTrackInfo = (pos: THREE.Vector3): TrackInfo => {
     const pX = pos.x;
+    const pY = pos.y;
     const pZ = pos.z;
 
-    // 1. Fast coarse search (step 8)
+    // 1. Fast coarse search (step 8) taking into account 3D elevation
     let bestDistSq = Infinity;
     let coarseBestIdx = 0;
     const step = 8;
     for (let i = 0; i < denseCount; i += step) {
       const cp = centerlinePoints[i].point;
       const dx = cp.x - pX;
+      const dy = cp.y - pY;
       const dz = cp.z - pZ;
-      const dSq = dx * dx + dz * dz;
+      // Weight Y separation so multi-level overpasses and bridges reliably lock to the current deck!
+      const dSq = dx * dx + dz * dz + dy * dy * 3.5;
       if (dSq < bestDistSq) {
         bestDistSq = dSq;
         coarseBestIdx = i;
@@ -462,8 +1440,9 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       const idx = (i + denseCount) % denseCount;
       const cp = centerlinePoints[idx].point;
       const dx = cp.x - pX;
+      const dy = cp.y - pY;
       const dz = cp.z - pZ;
-      const dSq = dx * dx + dz * dz;
+      const dSq = dx * dx + dz * dz + dy * dy * 3.5;
       if (dSq < bestDistSq) {
         bestDistSq = dSq;
         bestIdx = idx;
@@ -479,10 +1458,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       [centerlinePoints[bestIdx], centerlinePoints[nextIdx]],
     ];
 
-    let closestPt = centerlinePoints[bestIdx].point.clone();
+    _resClosestPt.copy(centerlinePoints[bestIdx].point);
     let bestSegmentDistSq = Infinity;
-    let finalTangent = centerlinePoints[bestIdx].tangent.clone();
-    let finalRight = centerlinePoints[bestIdx].right.clone();
+    _resTangent.copy(centerlinePoints[bestIdx].tangent);
+    _resRight.copy(centerlinePoints[bestIdx].right);
     let finalT = centerlinePoints[bestIdx].t;
 
     for (let sIdx = 0; sIdx < 2; sIdx++) {
@@ -491,15 +1470,18 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       _tmpSeg.subVectors(pB.point, pA.point);
       const segLenSq = _tmpSeg.lengthSq();
       if (segLenSq > 0.0001) {
-        _tmpToPos.set(pX - pA.point.x, 0, pZ - pA.point.z);
+        _tmpToPos.set(pX - pA.point.x, pY - pA.point.y, pZ - pA.point.z);
         const s = THREE.MathUtils.clamp(_tmpToPos.dot(_tmpSeg) / segLenSq, 0, 1);
         _tmpCandidate.copy(pA.point).addScaledVector(_tmpSeg, s);
-        const cDistSq = (_tmpCandidate.x - pX) * (_tmpCandidate.x - pX) + (_tmpCandidate.z - pZ) * (_tmpCandidate.z - pZ);
+        const cdx = _tmpCandidate.x - pX;
+        const cdy = _tmpCandidate.y - pY;
+        const cdz = _tmpCandidate.z - pZ;
+        const cDistSq = cdx * cdx + cdz * cdz + cdy * cdy * 3.5;
         if (cDistSq < bestSegmentDistSq) {
           bestSegmentDistSq = cDistSq;
-          closestPt.copy(_tmpCandidate);
-          finalTangent.lerpVectors(pA.tangent, pB.tangent, s).normalize();
-          finalRight.lerpVectors(pA.right, pB.right, s).normalize();
+          _resClosestPt.copy(_tmpCandidate);
+          _resTangent.lerpVectors(pA.tangent, pB.tangent, s).normalize();
+          _resRight.lerpVectors(pA.right, pB.right, s).normalize();
           let diffT = pB.t - pA.t;
           while (diffT > 0.5) diffT -= 1.0;
           while (diffT < -0.5) diffT += 1.0;
@@ -508,36 +1490,38 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       }
     }
 
-    const distToCenter = Math.sqrt(bestSegmentDistSq);
-    _tmpToCar.set(pX - closestPt.x, 0, pZ - closestPt.z);
-    const signedDistance = _tmpToCar.dot(finalRight);
-    const wallNormal = finalRight.clone().multiplyScalar(signedDistance > 0 ? -1 : 1);
+    const distToCenter = Math.hypot(pX - _resClosestPt.x, pZ - _resClosestPt.z);
+    _tmpToCar.set(pX - _resClosestPt.x, 0, pZ - _resClosestPt.z);
+    const signedDistance = _tmpToCar.dot(_resRight);
+    _resWallNormal.copy(_resRight).multiplyScalar(signedDistance > 0 ? -1 : 1);
 
     // Zone boundaries:
-    // 0 to halfW (8.0m): On Road
-    // 8.0m to 9.6m: On Curbs
-    // 9.6m to 16.0m: Offroad grass/sand/snow (slows car, no bounce!)
-    // > 16.0m: Outer perimeter boundary (soft bounce)
+    // 0 to halfW (11.0m): On Main Road
+    // 11.0m to 13.4m: On Curbs
+    // 13.4m to 22.0m: Offroad grass/sand/snow/shoulder (smooth drag, turbo bypasses)
+    // > 22.0m: Outer perimeter boundary (soft pushback, providing a wide 44m corridor!)
     const isOnCurb = distToCenter > halfW && distToCenter <= halfW + curbW;
-    const isOffroad = distToCenter > halfW + curbW && distToCenter <= halfW + 8.0;
-    const isWallHit = distToCenter > halfW + 8.0;
+    const isOffroad = distToCenter > halfW + curbW && distToCenter <= halfW + 11.0;
+    const isWallHit = distToCenter > halfW + 11.0;
 
-    return {
-      closestPoint: closestPt,
-      tangent: finalTangent,
-      right: finalRight,
-      distanceToCenter: distToCenter,
-      signedDistance,
-      t: finalT,
-      isOffroad,
-      isOnCurb,
-      isWallHit,
-      wallNormal,
-    };
+    // Detect surface sector at current position along curve
+    const activeSector = sectors.find(sec => finalT >= sec.startT && finalT < sec.endT) || sectors[0];
+
+    _cachedTrackInfo.distanceToCenter = distToCenter;
+    _cachedTrackInfo.signedDistance = signedDistance;
+    _cachedTrackInfo.t = finalT;
+    _cachedTrackInfo.isOffroad = isOffroad;
+    _cachedTrackInfo.isOnCurb = isOnCurb;
+    _cachedTrackInfo.isWallHit = isWallHit;
+    _cachedTrackInfo.surface = activeSector.surface;
+    _cachedTrackInfo.surfaceName = activeSector.name;
+    _cachedTrackInfo.surfaceIcon = activeSector.icon;
+
+    return _cachedTrackInfo;
   };
 
-  // 1. Generate Road Ribbon Geometry with procedural markings texture
-  const segments = 260;
+  // 1. Generate Road Ribbon Geometry with multi-surface materials
+  const segments = 340;
   const roadGeo = new THREE.BufferGeometry();
   const roadVertices: number[] = [];
   const roadUvs: number[] = [];
@@ -551,7 +1535,45 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const curbIndicesB: number[] = [];
   const curbUvsB: number[] = [];
 
+  // Natural wide shoulder geometry
+  const shoulderVertices: number[] = [];
+  const shoulderUvs: number[] = [];
+  const shoulderIndices: number[] = [];
+
   const wallsGroup = new THREE.Group();
+  const decorations = new THREE.Group();
+
+  // Add 3D Tunnels and Cliffs to decorations
+  const tunnelGroup = createTunnel(curve, trackDef.theme, trackWidth);
+  decorations.add(tunnelGroup);
+
+  const cliffsGroup = createCliffs(curve, trackDef.theme, trackWidth);
+  decorations.add(cliffsGroup);
+
+  // Shared geometry & material for elevated bridge pillars & safety railings
+  const bridgePillarMat = new THREE.MeshStandardMaterial({
+    color: trackDef.theme === 'cyber' ? 0x0f172a : (trackDef.theme === 'ice' ? 0x38bdf8 : (trackDef.theme === 'volcano' ? 0x18181b : (trackDef.theme === 'beach' ? 0x78350f : 0x334155))),
+    roughness: 0.8,
+    metalness: trackDef.theme === 'cyber' || trackDef.theme === 'sky' ? 0.7 : 0.2,
+  });
+
+  const bridgeRailingMat = new THREE.MeshStandardMaterial({
+    color: trackDef.theme === 'cyber' ? 0x06b6d4 : (trackDef.theme === 'ice' ? 0xe0f2fe : (trackDef.theme === 'volcano' ? 0xf97316 : (trackDef.theme === 'sky' ? 0xfacc15 : 0x94a3b8))),
+    roughness: 0.3,
+    metalness: 0.6,
+  });
+
+  const surfaceToMatIdx: Record<RoadSurfaceType, number> = {
+    asphalt: 0,
+    wood: 1,
+    cobblestone: 2,
+    sand: 3,
+    dirt: 4,
+    ice: 5,
+    magma_rock: 6,
+    glass: 7,
+    cyber_grid: 8,
+  };
 
   for (let i = 0; i <= segments; i++) {
     const t = (i / segments) % 1;
@@ -566,7 +1588,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     roadVertices.push(leftPt.x, leftPt.y + 0.04, leftPt.z);
     roadVertices.push(rightPt.x, rightPt.y + 0.04, rightPt.z);
 
-    const vCoord = (i / segments) * 45;
+    const vCoord = (i / segments) * 60;
     roadUvs.push(0, vCoord);
     roadUvs.push(1, vCoord);
 
@@ -574,6 +1596,12 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       const idx = i * 2;
       roadIndices.push(idx, idx + 1, idx + 2);
       roadIndices.push(idx + 1, idx + 3, idx + 2);
+
+      // Assign material group based on surface sector for this segment
+      const segT = (i + 0.5) / segments;
+      const segSector = sectors.find(sec => segT >= sec.startT && segT < sec.endT) || sectors[0];
+      const matIdx = surfaceToMatIdx[segSector.surface] ?? 0;
+      roadGeo.addGroup(i * 6, 6, matIdx);
     }
 
     // Curbs on left and right edge
@@ -600,6 +1628,87 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       curbIndicesB.push(cLIdx, cLIdx + 1, cLIdx + 2);
       curbIndicesB.push(cLIdx + 1, cLIdx + 3, cLIdx + 2);
     }
+
+    // Natural wide shoulder geometry (left and right)
+    const shLeftOuter = curbLeftOuter.clone().add(right.clone().multiplyScalar(-shoulderW));
+    shLeftOuter.y -= 0.14;
+    const shRightOuter = curbRightOuter.clone().add(right.clone().multiplyScalar(shoulderW));
+    shRightOuter.y -= 0.14;
+
+    const shIdx = i * 4;
+    // Left shoulder vertices
+    shoulderVertices.push(shLeftOuter.x, shLeftOuter.y, shLeftOuter.z);
+    shoulderVertices.push(curbLeftOuter.x, curbLeftOuter.y + 0.06, curbLeftOuter.z);
+    // Right shoulder vertices
+    shoulderVertices.push(curbRightOuter.x, curbRightOuter.y + 0.06, curbRightOuter.z);
+    shoulderVertices.push(shRightOuter.x, shRightOuter.y, shRightOuter.z);
+
+    shoulderUvs.push(0, vCoord);
+    shoulderUvs.push(1, vCoord);
+    shoulderUvs.push(0, vCoord);
+    shoulderUvs.push(1, vCoord);
+
+    if (i < segments) {
+      // Left shoulder quad
+      shoulderIndices.push(shIdx, shIdx + 1, shIdx + 4);
+      shoulderIndices.push(shIdx + 1, shIdx + 5, shIdx + 4);
+      // Right shoulder quad
+      shoulderIndices.push(shIdx + 2, shIdx + 3, shIdx + 6);
+      shoulderIndices.push(shIdx + 3, shIdx + 7, shIdx + 6);
+    }
+
+    // High Multi-Level Bridge Pillars: When track is elevated (pt.y > 3.2m), create massive structural pillars reaching down to ground level!
+    if (pt.y > 3.2 && i % 7 === 0) {
+      const pillarHeight = pt.y;
+      const pillarGroup = new THREE.Group();
+      pillarGroup.position.set(pt.x, pillarHeight * 0.5, pt.z);
+
+      // Main structural support column
+      const pillar = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.0, 2.8, pillarHeight, 8),
+        bridgePillarMat
+      );
+      pillar.castShadow = true;
+      pillarGroup.add(pillar);
+
+      // Horizontal cross-girder beam supporting the road deck
+      const beam = new THREE.Mesh(
+        new THREE.BoxGeometry(trackWidth + curbW * 2 + 2.0, 1.4, 3.2),
+        bridgePillarMat
+      );
+      beam.position.y = pillarHeight * 0.5 - 0.7;
+      pillarGroup.add(beam);
+
+      decorations.add(pillarGroup);
+    }
+
+    // Elevated Bridge Safety Railings with posts
+    if (pt.y > 3.0 && i % 3 === 0) {
+      const rotY = Math.atan2(tangent.x, tangent.z);
+
+      // Left railing post
+      const postL = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.4, 0.3), bridgeRailingMat);
+      postL.position.copy(curbLeftOuter).add(new THREE.Vector3(0, 0.7, 0));
+      postL.rotation.y = rotY;
+      decorations.add(postL);
+
+      // Right railing post
+      const postR = new THREE.Mesh(new THREE.BoxGeometry(0.3, 1.4, 0.3), bridgeRailingMat);
+      postR.position.copy(curbRightOuter).add(new THREE.Vector3(0, 0.7, 0));
+      postR.rotation.y = rotY;
+      decorations.add(postR);
+
+      // Top horizontal railing beam connecting segments
+      const railL = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 4.8), bridgeRailingMat);
+      railL.position.copy(curbLeftOuter).add(new THREE.Vector3(0, 1.2, 0));
+      railL.rotation.y = rotY;
+      decorations.add(railL);
+
+      const railR = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.25, 4.8), bridgeRailingMat);
+      railR.position.copy(curbRightOuter).add(new THREE.Vector3(0, 1.2, 0));
+      railR.rotation.y = rotY;
+      decorations.add(railR);
+    }
   }
 
   roadGeo.setAttribute('position', new THREE.Float32BufferAttribute(roadVertices, 3));
@@ -607,13 +1716,28 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   roadGeo.setIndex(roadIndices);
   roadGeo.computeVertexNormals();
 
-  const roadTex = createAsphaltTexture(trackDef.trackColor, trackDef.theme);
-  const roadMat = new THREE.MeshStandardMaterial({
-    map: roadTex,
-    roughness: trackDef.theme === 'ice' ? 0.25 : 0.75,
-    metalness: trackDef.theme === 'ice' ? 0.35 : 0.1,
-  });
-  const trackMesh = new THREE.Mesh(roadGeo, roadMat);
+  // Create individual surface materials
+  const asphaltTex = createAsphaltTexture(trackDef.trackColor, trackDef.theme);
+  const woodTex = createWoodTexture();
+  const cobbleTex = createCobblestoneTexture();
+  const sandTex = createSandTexture();
+  const dirtTex = createDirtTexture();
+  const iceTex = createIceTexture();
+  const magmaTex = createMagmaTexture();
+  const cyberGlassTex = createCyberGlassTexture();
+
+  const asphaltMat = new THREE.MeshStandardMaterial({ map: asphaltTex, roughness: 0.75, metalness: 0.1 });
+  const woodMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.85, metalness: 0.15 });
+  const cobbleMat = new THREE.MeshStandardMaterial({ map: cobbleTex, roughness: 0.9, metalness: 0.1 });
+  const sandMat = new THREE.MeshStandardMaterial({ map: sandTex, roughness: 0.95, metalness: 0.05 });
+  const dirtMat = new THREE.MeshStandardMaterial({ map: dirtTex, roughness: 0.92, metalness: 0.1 });
+  const iceMat = new THREE.MeshStandardMaterial({ map: iceTex, roughness: 0.08, metalness: 0.5 });
+  const magmaMat = new THREE.MeshStandardMaterial({ map: magmaTex, emissive: 0xd97706, emissiveIntensity: 0.6, roughness: 0.7, metalness: 0.2 });
+  const glassMat = new THREE.MeshStandardMaterial({ map: cyberGlassTex, transparent: true, opacity: 0.88, roughness: 0.1, metalness: 0.6 });
+  const cyberGridMat = new THREE.MeshStandardMaterial({ map: cyberGlassTex, emissive: 0x06b6d4, emissiveIntensity: 0.8, roughness: 0.2, metalness: 0.7 });
+
+  const roadMaterials = [asphaltMat, woodMat, cobbleMat, sandMat, dirtMat, iceMat, magmaMat, glassMat, cyberGridMat];
+  const trackMesh = new THREE.Mesh(roadGeo, roadMaterials);
   trackMesh.receiveShadow = true;
 
   // Curbs mesh with alternating curb rumble texture
@@ -643,6 +1767,23 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const curbsGroup = new THREE.Group();
   curbsGroup.add(curbMeshA);
   curbsGroup.add(curbMeshB);
+
+  // Natural shoulder mesh
+  const shoulderGeo = new THREE.BufferGeometry();
+  shoulderGeo.setAttribute('position', new THREE.Float32BufferAttribute(shoulderVertices, 3));
+  shoulderGeo.setAttribute('uv', new THREE.Float32BufferAttribute(shoulderUvs, 2));
+  shoulderGeo.setIndex(shoulderIndices);
+  shoulderGeo.computeVertexNormals();
+
+  const shoulderTex = createShoulderTexture(trackDef.theme);
+  const shoulderMat = new THREE.MeshStandardMaterial({
+    map: shoulderTex,
+    roughness: 0.95,
+    metalness: 0.05,
+  });
+  const shoulderMesh = new THREE.Mesh(shoulderGeo, shoulderMat);
+  shoulderMesh.receiveShadow = true;
+  decorations.add(shoulderMesh);
 
   // 2. Checkpoints along spline for lap progress (32 checkpoints, spaced ~20-25m)
   const numCheckpoints = 32;
@@ -746,9 +1887,31 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     startArch.add(lightHousing);
   });
 
-  // 4. Item Boxes distributed at 4 balanced race stations
+  // 4. Item Boxes distributed across the long track (Shared geometries and materials for instant 60fps rendering)
   const itemBoxes: ItemBoxPosition[] = [];
-  const itemStations = [0.12, 0.38, 0.62, 0.88];
+  const itemStations = [0.08, 0.24, 0.40, 0.56, 0.72, 0.88];
+
+  // Shared geometries and materials for all item boxes to prevent GPU state stalls and memory overhead
+  const sharedCubeGeo = new THREE.BoxGeometry(1.35, 1.35, 1.35);
+  const sharedCubeMat = new THREE.MeshStandardMaterial({
+    color: 0xfbbf24,
+    emissive: 0xd97706,
+    emissiveIntensity: 0.9,
+    roughness: 0.15,
+    metalness: 0.2,
+    transparent: true,
+    opacity: 0.88,
+  });
+  const sharedGemGeo = new THREE.OctahedronGeometry(0.52, 0);
+  const sharedGemMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    emissive: 0xfef08a,
+    emissiveIntensity: 1.3,
+    metalness: 0.85,
+    roughness: 0.1,
+  });
+  const sharedStarGeo = new THREE.DodecahedronGeometry(0.12);
+  const sharedStarMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
 
   itemStations.forEach(t => {
     const pt = curve.getPointAt(t);
@@ -763,47 +1926,21 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       const boxGroup = new THREE.Group();
       boxGroup.position.copy(boxPos);
 
-      // Outer crystal cube with iridescent translucent glow
-      const cubeGeo = new THREE.BoxGeometry(1.35, 1.35, 1.35);
-      const cubeMat = new THREE.MeshPhysicalMaterial({
-        color: 0xfbbf24,
-        emissive: 0xd97706,
-        emissiveIntensity: 0.7,
-        roughness: 0.08,
-        transmission: 0.75,
-        transparent: true,
-        opacity: 0.88,
-        ior: 1.4,
-      });
-      const cube = new THREE.Mesh(cubeGeo, cubeMat);
+      // Outer crystal cube with bright cartoon arcade glow
+      const cube = new THREE.Mesh(sharedCubeGeo, sharedCubeMat);
       boxGroup.add(cube);
 
       // Inner spinning golden prize gem
-      const gemGeo = new THREE.OctahedronGeometry(0.52, 0);
-      const gemMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        emissive: 0xfef08a,
-        emissiveIntensity: 1.2,
-        metalness: 0.85,
-        roughness: 0.1,
-      });
-      const gem = new THREE.Mesh(gemGeo, gemMat);
+      const gem = new THREE.Mesh(sharedGemGeo, sharedGemMat);
       boxGroup.add(gem);
 
       // Orbiting sparkle ring
       for (let orb = 0; orb < 4; orb++) {
-        const star = new THREE.Mesh(
-          new THREE.DodecahedronGeometry(0.12),
-          new THREE.MeshBasicMaterial({ color: 0xfef08a })
-        );
+        const star = new THREE.Mesh(sharedStarGeo, sharedStarMat);
         const orbAngle = (orb / 4) * Math.PI * 2;
         star.position.set(Math.cos(orbAngle) * 0.95, 0, Math.sin(orbAngle) * 0.95);
         boxGroup.add(star);
       }
-
-      // Soft ambient light
-      const boxLight = new THREE.PointLight(0xfbbf24, 0.8, 3.5);
-      boxGroup.add(boxLight);
 
       itemBoxes.push({
         x: boxPos.x,
@@ -818,7 +1955,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   // 5. Speed Boost Pads on Track with pulsing chevron arrows & neon borders
   const boostPads: BoostPadPosition[] = [];
-  const boostStations = [0.24, 0.52, 0.78];
+  const boostStations = [0.16, 0.32, 0.48, 0.65, 0.82];
 
   boostStations.forEach(t => {
     const pt = curve.getPointAt(t);
@@ -861,11 +1998,6 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       padGroup.add(arrow);
     }
 
-    // Soft warm boost glow light
-    const padLight = new THREE.PointLight(0xf97316, 1.2, 5.5);
-    padLight.position.set(0, 0.6, 0);
-    padGroup.add(padLight);
-
     boostPads.push({
       x: pt.x,
       y: pt.y + 0.1,
@@ -876,7 +2008,6 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   });
 
   // 6. Rich Themed Scenery Props
-  const decorations = new THREE.Group();
   let waterMesh: THREE.Mesh | undefined;
 
   if (trackDef.theme === 'beach') {
@@ -1301,6 +2432,154 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       decorations.add(propGroup);
     }
+  } else if (trackDef.theme === 'volcano') {
+    // 1. Glowing Molten Magma / Lava Lake below
+    const lavaGeo = new THREE.PlaneGeometry(1600, 1600, 32, 32);
+    const lavaMat = new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      emissive: 0x991b1b,
+      emissiveIntensity: 0.85,
+      roughness: 0.35,
+      metalness: 0.2,
+      side: THREE.DoubleSide,
+    });
+    waterMesh = new THREE.Mesh(lavaGeo, lavaMat);
+    waterMesh.rotation.x = -Math.PI / 2;
+    waterMesh.position.y = -0.6;
+    decorations.add(waterMesh);
+
+    // 2. Prehistoric Giant Dinosaur Ribcage Tunnel spanning over track
+    for (let r = 0; r < 6; r++) {
+      const ribT = (0.40 + r * 0.016) % 1;
+      const ribPt = curve.getPointAt(ribT);
+      const ribTan = curve.getTangentAt(ribT).normalize();
+      const ribRotY = Math.atan2(ribTan.x, ribTan.z);
+
+      const ribGroup = new THREE.Group();
+      ribGroup.position.set(ribPt.x, ribPt.y, ribPt.z);
+      ribGroup.rotation.y = ribRotY;
+
+      const boneMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.7 });
+      const archRib = new THREE.Mesh(new THREE.TorusGeometry(halfW + 1.6, 0.55, 8, 16, Math.PI), boneMat);
+      archRib.position.y = 0.5;
+      ribGroup.add(archRib);
+      decorations.add(ribGroup);
+    }
+
+    // 3. Volcanic Props: Basalt columns, smoking lava rocks, and glowing amber crystals
+    for (let i = 0; i < 45; i++) {
+      const t = (i / 45) % 1;
+      const pt = curve.getPointAt(t);
+      const tangent = curve.getTangentAt(t).normalize();
+      const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
+      const side = i % 2 === 0 ? 1 : -1;
+      const dist = side * (halfW + 6 + Math.random() * 22);
+
+      const pPos = pt.clone().add(right.multiplyScalar(dist));
+      pPos.y = pt.y;
+
+      const pGroup = new THREE.Group();
+      pGroup.position.copy(pPos);
+
+      if (i % 3 === 0) {
+        // Hexagonal Basalt Column
+        const colHeight = 5 + Math.random() * 10;
+        const col = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.4, 1.6, colHeight, 6),
+          new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.9 })
+        );
+        col.position.y = colHeight * 0.5;
+        pGroup.add(col);
+
+        // Glowing magma cap
+        const cap = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.2, 1.4, 0.4, 6),
+          new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.9 })
+        );
+        cap.position.y = colHeight;
+        pGroup.add(cap);
+      } else if (i % 3 === 1) {
+        // Glowing Amber Magma Crystal
+        const crystalMat = new THREE.MeshStandardMaterial({
+          color: 0xf97316,
+          emissive: 0xd97706,
+          emissiveIntensity: 0.8,
+          roughness: 0.2,
+          metalness: 0.5,
+        });
+        const cMesh = new THREE.Mesh(new THREE.OctahedronGeometry(1.4, 0), crystalMat);
+        cMesh.scale.set(0.7, 2.4, 0.7);
+        cMesh.position.y = 1.6;
+        pGroup.add(cMesh);
+      } else {
+        // Molten Lava Rock with cracked fissures
+        const rock = new THREE.Mesh(
+          new THREE.DodecahedronGeometry(2.2, 1),
+          new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.95 })
+        );
+        rock.position.y = 1.6;
+        rock.scale.set(1.4, 0.9, 1.2);
+        pGroup.add(rock);
+      }
+
+      decorations.add(pGroup);
+    }
+
+  } else if (trackDef.theme === 'sky') {
+    // 1. Floating Fluffy White Cloud Sea below
+    const cloudSeaGeo = new THREE.PlaneGeometry(1800, 1800, 32, 32);
+    const cloudSeaMat = new THREE.MeshStandardMaterial({
+      color: 0xf0fdf4,
+      roughness: 0.9,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.88,
+      side: THREE.DoubleSide,
+    });
+    waterMesh = new THREE.Mesh(cloudSeaGeo, cloudSeaMat);
+    waterMesh.rotation.x = -Math.PI / 2;
+    waterMesh.position.y = -6.0;
+    decorations.add(waterMesh);
+
+    // 2. Futuristic Glass & Steel Sky Towers alongside elevated skyways
+    for (let i = 0; i < 40; i++) {
+      const t = (i / 40) % 1;
+      const pt = curve.getPointAt(t);
+      const tangent = curve.getTangentAt(t).normalize();
+      const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
+      const side = i % 2 === 0 ? 1 : -1;
+      const dist = side * (halfW + 8 + Math.random() * 24);
+
+      const pPos = pt.clone().add(right.multiplyScalar(dist));
+      pPos.y = pt.y - 12;
+
+      const pGroup = new THREE.Group();
+      pGroup.position.copy(pPos);
+
+      // Sleek Sky Spire
+      const towerHeight = 35 + Math.random() * 30;
+      const tower = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.4, 3.8, towerHeight, 8),
+        new THREE.MeshStandardMaterial({
+          color: 0xf8fafc,
+          roughness: 0.25,
+          metalness: 0.8,
+        })
+      );
+      tower.position.y = towerHeight * 0.5;
+      pGroup.add(tower);
+
+      // Cyan neon energy ring around tower
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(3.6, 0.25, 8, 16),
+        new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 1.1 })
+      );
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = towerHeight * 0.75;
+      pGroup.add(ring);
+
+      decorations.add(pGroup);
+    }
   }
 
   // 7. Start/Finish Grandstand with Cheering Crowds & Pennant Flags
@@ -1642,9 +2921,54 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       decorations.add(mGroup);
     }
+  } else if (trackDef.theme === 'volcano') {
+    // Giant Smoldering Volcano with glowing magma crater on horizon
+    const vGroup = new THREE.Group();
+    vGroup.position.set(0, 0, -320);
+
+    const volcanoCone = new THREE.Mesh(
+      new THREE.CylinderGeometry(28, 95, 120, 16),
+      new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.95 })
+    );
+    volcanoCone.position.y = 60;
+    vGroup.add(volcanoCone);
+
+    // Glowing bubbling magma crater at the peak
+    const craterMagma = new THREE.Mesh(
+      new THREE.CylinderGeometry(25, 25, 4, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0xef4444,
+        emissive: 0xd97706,
+        emissiveIntensity: 1.2,
+      })
+    );
+    craterMagma.position.y = 120;
+    vGroup.add(craterMagma);
+
+    decorations.add(vGroup);
+  } else if (trackDef.theme === 'sky') {
+    // Floating Solar Sky Station in the stratosphere
+    const sGroup = new THREE.Group();
+    sGroup.position.set(120, 85, -160);
+
+    const hub = new THREE.Mesh(
+      new THREE.SphereGeometry(14, 16, 16),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.85 })
+    );
+    sGroup.add(hub);
+
+    const solarRing = new THREE.Mesh(
+      new THREE.TorusGeometry(26, 1.2, 8, 32),
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0369a1, emissiveIntensity: 0.9 })
+    );
+    solarRing.rotation.x = Math.PI / 2.3;
+    sGroup.add(solarRing);
+
+    decorations.add(sGroup);
   }
 
-  // 10. Outer Guard Rails (placed comfortably at halfW + 4.8m so racers can drift with wide arcs)
+  // 10. Spacious Natural Borders & Targeted Bridge Safety Barriers
+  // Guard rails are placed only where necessary (elevated bridges & sharp precipices) so tracks feel open and scenic
   const railSegments = 160;
   for (let i = 0; i < railSegments; i += 2) {
     const t = i / railSegments;
@@ -1653,27 +2977,33 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
     const rotY = Math.atan2(tangent.x, tangent.z);
 
-    const railGeo = new THREE.BoxGeometry(0.4, 1.2, 4.4);
-    const railColor = trackDef.theme === 'cyber' ? 0x06b6d4 : (trackDef.theme === 'ice' ? 0x38bdf8 : 0x94a3b8);
-    const railMat = new THREE.MeshStandardMaterial({
-      color: railColor,
-      metalness: 0.6,
-      roughness: 0.3,
-    });
+    // Only install safety crash barriers on high bridges or sharp cliff dropoffs
+    const isElevatedBridge = pt.y > 3.2;
+    const isCliffEdge = (t > 0.08 && t < 0.28) || (t > 0.70 && t < 0.88);
 
-    // Left guard rail (placed at halfW + 4.8m)
-    const leftWall = new THREE.Mesh(railGeo, railMat);
-    leftWall.position.copy(pt).add(right.clone().multiplyScalar(-halfW - 4.8));
-    leftWall.position.y += 0.6;
-    leftWall.rotation.y = rotY;
-    wallsGroup.add(leftWall);
+    if (isElevatedBridge || isCliffEdge) {
+      const railGeo = new THREE.BoxGeometry(0.35, 1.1, 4.4);
+      const railColor = trackDef.theme === 'cyber' ? 0x06b6d4 : (trackDef.theme === 'ice' ? 0x38bdf8 : (trackDef.theme === 'volcano' ? 0xf97316 : (trackDef.theme === 'sky' ? 0xfacc15 : 0x94a3b8)));
+      const railMat = new THREE.MeshStandardMaterial({
+        color: railColor,
+        metalness: 0.6,
+        roughness: 0.3,
+      });
 
-    // Right guard rail (placed at halfW + 4.8m)
-    const rightWall = new THREE.Mesh(railGeo, railMat);
-    rightWall.position.copy(pt).add(right.clone().multiplyScalar(halfW + 4.8));
-    rightWall.position.y += 0.6;
-    rightWall.rotation.y = rotY;
-    wallsGroup.add(rightWall);
+      // Left guard rail (placed with generous clearance at halfW + curbW + 2.0m)
+      const leftWall = new THREE.Mesh(railGeo, railMat);
+      leftWall.position.copy(pt).add(right.clone().multiplyScalar(-halfW - curbW - 2.0));
+      leftWall.position.y += 0.55;
+      leftWall.rotation.y = rotY;
+      wallsGroup.add(leftWall);
+
+      // Right guard rail
+      const rightWall = new THREE.Mesh(railGeo, railMat);
+      rightWall.position.copy(pt).add(right.clone().multiplyScalar(halfW + curbW + 2.0));
+      rightWall.position.y += 0.55;
+      rightWall.rotation.y = rotY;
+      wallsGroup.add(rightWall);
+    }
   }
 
   return {

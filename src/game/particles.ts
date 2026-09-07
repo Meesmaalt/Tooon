@@ -15,6 +15,7 @@ export interface Particle {
 
 export class ParticleSystem {
   private scene: THREE.Scene;
+  private particleGroup: THREE.Group;
   private activeParticles: Particle[] = [];
   private particlePool: THREE.Mesh[] = [];
 
@@ -36,6 +37,9 @@ export class ParticleSystem {
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
+    this.particleGroup = new THREE.Group();
+    this.scene.add(this.particleGroup);
+
     this.sparkGeo = new THREE.SphereGeometry(0.12, 6, 6);
     this.smokeGeo = new THREE.SphereGeometry(0.22, 6, 6);
     this.flameGeo = new THREE.ConeGeometry(0.2, 0.6, 6);
@@ -116,6 +120,25 @@ export class ParticleSystem {
           depthWrite: false,
         })
     );
+
+    // Pre-populate particle pool with initial meshes to eliminate allocations during gameplay
+    for (let i = 0; i < 60; i++) {
+      const mesh = new THREE.Mesh(this.sparkGeo, this.smokeMat);
+      mesh.visible = false;
+      this.particleGroup.add(mesh);
+      this.particlePool.push(mesh);
+    }
+  }
+
+  public getWarmupMeshes(): THREE.Object3D[] {
+    const list: THREE.Object3D[] = [
+      new THREE.Mesh(this.sparkGeo, this.sparkYellowMat),
+      new THREE.Mesh(this.smokeGeo, this.smokeMat),
+      new THREE.Mesh(this.flameGeo, this.flameOrangeMat),
+      new THREE.Mesh(this.flameGeo, this.flameCyanMat),
+    ];
+    this.starMats.forEach(m => list.push(new THREE.Mesh(this.starGeo, m)));
+    return list;
   }
 
   private acquireMesh(geometry: THREE.BufferGeometry, material: THREE.Material): THREE.Mesh {
@@ -127,13 +150,12 @@ export class ParticleSystem {
       mesh.visible = true;
     } else {
       mesh = new THREE.Mesh(geometry, material);
+      this.particleGroup.add(mesh);
     }
-    this.scene.add(mesh);
     return mesh;
   }
 
   private releaseMesh(mesh: THREE.Mesh) {
-    this.scene.remove(mesh);
     mesh.visible = false;
     if (this.particlePool.length < 250) {
       this.particlePool.push(mesh);
@@ -337,10 +359,10 @@ export class ParticleSystem {
   }
 
   /**
-   * Updates all active particles smoothly
+   * Updates all active particles smoothly (compacts array in-place with zero allocations)
    */
   public update(dt: number) {
-    const alive: Particle[] = [];
+    let aliveCount = 0;
 
     for (let i = 0; i < this.activeParticles.length; i++) {
       const p = this.activeParticles[i];
@@ -366,17 +388,26 @@ export class ParticleSystem {
         const currentScale = Math.max(0.01, p.initialScale * (1 + (1 - lifeRatio) * p.scaleSpeed));
         p.mesh.scale.set(currentScale, currentScale, currentScale);
 
-        alive.push(p);
+        this.activeParticles[aliveCount++] = p;
       }
     }
 
-    this.activeParticles = alive;
+    this.activeParticles.length = aliveCount;
   }
 
   public clear() {
-    this.activeParticles.forEach((p) => {
-      this.releaseMesh(p.mesh);
-    });
+    for (let i = 0; i < this.activeParticles.length; i++) {
+      this.releaseMesh(this.activeParticles[i].mesh);
+    }
     this.activeParticles = [];
+  }
+
+  public destroy() {
+    this.clear();
+    this.scene.remove(this.particleGroup);
+    this.sparkGeo.dispose();
+    this.smokeGeo.dispose();
+    this.flameGeo.dispose();
+    this.starGeo.dispose();
   }
 }

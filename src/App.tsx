@@ -57,6 +57,9 @@ export default function App() {
     currentLapTime: 0,
     bestLapTime: null as number | null,
     driftCharge: 0,
+    currentSurface: 'asphalt',
+    surfaceName: 'Rannatee',
+    surfaceIcon: '🛣️',
   });
   const [combatEvents, setCombatEvents] = useState<string[]>([]);
   const [countdownText, setCountdownText] = useState<string | number>('');
@@ -430,6 +433,9 @@ export default function App() {
           currentLapTime={hudData.currentLapTime}
           bestLapTime={hudData.bestLapTime}
           driftCharge={hudData.driftCharge}
+          currentSurface={hudData.currentSurface}
+          surfaceName={hudData.surfaceName}
+          surfaceIcon={hudData.surfaceIcon}
           combatEvents={combatEvents}
           countdownText={countdownText}
           minimapData={minimapData}
