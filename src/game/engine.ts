@@ -4,7 +4,7 @@ import { buildTrack, TrackData } from './tracks';
 import { createToonCarMesh, CarMeshContainer, CAR_DEFINITIONS } from './cars';
 import { updateRacerPhysics, resolveCarCarCollisions, updateProjectiles, CollisionEvent } from './physics';
 import { createAIControllers, computeAIInput, AIOpponentController } from './ai';
-import { getRandomPowerUp, createRocketMesh, createMineMesh, createShieldMesh } from './powerups';
+import { getRandomPowerUp, POWER_UPS, createRocketMesh, createBlueRocketMesh, createThundercloudMesh, createBananaMesh, createMineMesh, createShieldMesh } from './powerups';
 import { soundManager } from '../audio/soundManager';
 import { ParticleSystem } from './particles';
 import { SkidMarkManager } from './skidmarks';
@@ -76,8 +76,8 @@ export class ToonCarEngine {
   private cloudsGroup?: THREE.Group;
   private cameraShake: number = 0;
   private hudTimer: number = 0;
-  private physicsAccumulator: number = 0;
-  private readonly FIXED_DT: number = 1 / 60;
+  private currentCamLookTarget: THREE.Vector3 = new THREE.Vector3();
+  private isFirstCamFrame: boolean = true;
   private cachedMinimapPoints: { x: number; z: number }[] | null = null;
   private cachedMinimapRacers: { id: string; x: number; z: number; color: string; isPlayer: boolean; position: number }[] = [];
   private cachedMinimapData: {
@@ -451,14 +451,15 @@ export class ToonCarEngine {
     this.animFrameId = requestAnimationFrame(this.loop);
 
     const now = performance.now();
-    let rawDt = (now - this.lastTime) / 1000;
+    let dt = (now - this.lastTime) / 1000;
     this.lastTime = now;
-    if (rawDt > 0.08) rawDt = 0.08; // Clamp lag spikes (e.g. background tab)
+    if (dt > 0.045) dt = 0.045; // Clamp lag spikes
+    if (dt < 0.001) dt = 0.001;
 
     // 1. Countdown handler
     if (this.gameState === 'countdown') {
       const prevTimer = this.countdownTimer;
-      this.countdownTimer -= rawDt;
+      this.countdownTimer -= dt;
 
       if (prevTimer >= 3.0 && this.countdownTimer < 3.0) {
         soundManager.playCountdown(false);
@@ -489,24 +490,7 @@ export class ToonCarEngine {
       }
     }
 
-    // 2. Deterministic Fixed Physics Sub-Stepping (eliminates micro-stutters)
-    this.physicsAccumulator += rawDt;
-    let steps = 0;
-    const maxSteps = 3;
-    while (this.physicsAccumulator >= this.FIXED_DT && steps < maxSteps) {
-      this.stepPhysics(this.FIXED_DT, now);
-      this.physicsAccumulator -= this.FIXED_DT;
-      steps++;
-    }
-    if (this.physicsAccumulator > this.FIXED_DT) {
-      this.physicsAccumulator = 0;
-    }
-
-    // 3. Visuals, particles, camera & rendering (runs per display refresh)
-    this.stepVisualsAndRender(rawDt, now);
-  };
-
-  private stepPhysics(dt: number, now: number) {
+    // 2. Physics & Racer simulation (1:1 lockstep with display refresh)
     const canDrive = this.gameState === 'racing';
 
     this.racers.forEach(racer => {
@@ -545,7 +529,7 @@ export class ToonCarEngine {
         }
       }
 
-      // Physics update (rock-solid with fixed timestep)
+      // Physics update (buttery smooth per frame)
       updateRacerPhysics(racer, input, this.trackData, dt, (event) => this.handleCollision(event), this.speedFactor);
 
       // Sound update for local player
@@ -583,9 +567,8 @@ export class ToonCarEngine {
 
     // Calculate Race Standings (1st - 6th)
     this.updateRacePositions();
-  }
 
-  private stepVisualsAndRender(dt: number, now: number) {
+    // 3. Visual meshes, particles, camera & rendering
     this.syncProjectileMeshes();
 
     // Update Item Boxes Respawn & Idle Spin
@@ -620,7 +603,7 @@ export class ToonCarEngine {
     this.particles.update(dt);
     this.skidMarks.update(dt);
 
-    // Dynamic Chase Camera (smooth exponential interpolation)
+    // Dynamic Chase Camera (synchronized position and look-target)
     this.updateCamera(dt);
 
     // Notify React HUD (throttled to ~16 FPS to prevent thread stalling)
@@ -658,7 +641,7 @@ export class ToonCarEngine {
 
     // Render 3D Scene
     this.renderer.render(this.scene, this.camera);
-  }
+  };
 
   private handleCollision(event: CollisionEvent) {
     if (event.type === 'car_bump') {
@@ -866,8 +849,8 @@ export class ToonCarEngine {
       const meshContainer = this.carMeshes.get(racer.id);
       if (!meshContainer) return;
 
-      // Position with suspension bounce
-      meshContainer.root.position.set(racer.x, racer.y + racer.bounceOffset, racer.z);
+      // Position
+      meshContainer.root.position.set(racer.x, racer.y, racer.z);
 
       // Rotation (Y yaw + drift tilt)
       const driftTilt = racer.isDrifting ? -racer.steerAngle * 0.18 : 0;
@@ -883,9 +866,9 @@ export class ToonCarEngine {
         w.rotation.x = racer.wheelRot;
       });
 
-      // Driver bobbing head
+      // Driver head steering reaction (no vertical bouncing)
       meshContainer.driverHead.rotation.z = -racer.steerAngle * 0.3;
-      meshContainer.driverHead.position.y = 0.95 + Math.sin(Date.now() * 0.02) * 0.03;
+      meshContainer.driverHead.position.y = 0.95;
 
       // Update Car Shadow position and yaw
       const shadow = this.shadowMeshes.get(racer.id);
@@ -985,19 +968,27 @@ export class ToonCarEngine {
     _targetCamPos.set(player.x, player.y + camHeight, player.z)
       .addScaledVector(_camDir, camDist);
 
-    // Frame-rate independent exponential smoothing (completely jitter-free)
-    const camAlpha = 1.0 - Math.exp(-9.0 * dt);
-    this.cameraShake = 0;
-    this.camera.position.lerp(_targetCamPos, camAlpha);
-
     const lookAheadDist = isLookingBack ? -8 : 5.0;
     _camLookTarget.set(player.x, player.y + 1.25, player.z).addScaledVector(_camFwd, lookAheadDist);
+
+    if (this.isFirstCamFrame) {
+      this.camera.position.copy(_targetCamPos);
+      this.currentCamLookTarget.copy(_camLookTarget);
+      this.isFirstCamFrame = false;
+    } else {
+      // Synchronized exponential smoothing for both camera position and look target
+      // This guarantees the camera's pitch angle never oscillates relative to the car!
+      const camAlpha = Math.min(1.0, 1.0 - Math.exp(-12.0 * dt));
+      this.camera.position.lerp(_targetCamPos, camAlpha);
+      this.currentCamLookTarget.lerp(_camLookTarget, camAlpha);
+    }
+
     this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(_camLookTarget);
+    this.camera.lookAt(this.currentCamLookTarget);
 
     // Dynamic FOV for speed sensation - smooth and comfortable without fish-eye dizziness
     const targetFOV = player.turboTimer > 0 ? 76 : (player.speed > 25 ? 70 : 64);
-    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFOV, 1.0 - Math.exp(-5.0 * dt));
+    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFOV, Math.min(1.0, dt * 4.0));
     this.camera.updateProjectionMatrix();
   }
 

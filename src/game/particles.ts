@@ -333,6 +333,162 @@ export class ParticleSystem {
   }
 
   /**
+   * Spawns massive blue rocket explosion
+   */
+  public emitBlueExplosion(x: number, y: number, z: number) {
+    // Glowing cyan and blue stars
+    for (let i = 0; i < 24; i++) {
+      const isBlue = i % 2 === 0;
+      const mat = isBlue ? this.sparkBlueMat : this.flameCyanMat;
+      const mesh = this.acquireMesh(this.starGeo, mat);
+      mesh.position.set(x, y + 0.8, z);
+
+      const angle = (i / 24) * Math.PI * 2 + Math.random() * 0.2;
+      const speed = 7 + Math.random() * 9;
+
+      this.activeParticles.push({
+        mesh,
+        vx: Math.cos(angle) * speed,
+        vy: 3 + Math.random() * 6,
+        vz: Math.sin(angle) * speed,
+        rotSpeed: (Math.random() - 0.5) * 10,
+        scaleSpeed: -0.5,
+        life: 0.65,
+        maxLife: 0.65,
+        initialScale: 1.8,
+        baseOpacity: 1.0,
+      });
+    }
+
+    // Dense smoke ring
+    for (let i = 0; i < 12; i++) {
+      const mesh = this.acquireMesh(this.smokeGeo, this.smokeMat);
+      mesh.position.set(
+        x + (Math.random() - 0.5) * 1.5,
+        y + 0.5 + Math.random() * 0.8,
+        z + (Math.random() - 0.5) * 1.5
+      );
+
+      this.activeParticles.push({
+        mesh,
+        vx: (Math.random() - 0.5) * 5,
+        vy: 2 + Math.random() * 3,
+        vz: (Math.random() - 0.5) * 5,
+        rotSpeed: (Math.random() - 0.5) * 3,
+        scaleSpeed: 2.8,
+        life: 0.75,
+        maxLife: 0.75,
+        initialScale: 1.8,
+        baseOpacity: 0.7,
+      });
+    }
+  }
+
+  /**
+   * Spawns vertical lightning bolt and electric ground shockwave
+   */
+  public emitLightning(x: number, y: number, z: number) {
+    // Vertical electric spark column (cloud to ground)
+    for (let step = 0; step < 10; step++) {
+      const mat = step % 2 === 0 ? this.sparkBlueMat : this.sparkPurpleMat;
+      const mesh = this.acquireMesh(this.sparkGeo, mat);
+      const boltY = y + (step * 0.35);
+      const jitterX = (Math.random() - 0.5) * 0.4;
+      const jitterZ = (Math.random() - 0.5) * 0.4;
+      mesh.position.set(x + jitterX, boltY, z + jitterZ);
+
+      this.activeParticles.push({
+        mesh,
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: (Math.random() - 0.5) * 1.5,
+        vz: (Math.random() - 0.5) * 1.5,
+        rotSpeed: 0,
+        scaleSpeed: 0.8,
+        life: 0.35,
+        maxLife: 0.35,
+        initialScale: 1.5,
+        baseOpacity: 1.0,
+      });
+    }
+
+    // Ground spark burst
+    for (let i = 0; i < 14; i++) {
+      const mat = i % 2 === 0 ? this.sparkPurpleMat : this.flameCyanMat;
+      const mesh = this.acquireMesh(this.sparkGeo, mat);
+      mesh.position.set(x, y + 0.2, z);
+      const a = (i / 14) * Math.PI * 2;
+      const spd = 4 + Math.random() * 5;
+
+      this.activeParticles.push({
+        mesh,
+        vx: Math.cos(a) * spd,
+        vy: 1.5 + Math.random() * 3.5,
+        vz: Math.sin(a) * spd,
+        rotSpeed: 0,
+        scaleSpeed: -0.5,
+        life: 0.4,
+        maxLife: 0.4,
+        initialScale: 1.2,
+        baseOpacity: 0.95,
+      });
+    }
+  }
+
+  /**
+   * Spawns ominous rain/electric sparks under active thundercloud
+   */
+  public emitCloudSparks(x: number, y: number, z: number) {
+    if (this.activeParticles.length > 220) return;
+    const mat = Math.random() > 0.5 ? this.sparkPurpleMat : this.flameCyanMat;
+    const mesh = this.acquireMesh(this.sparkGeo, mat);
+    mesh.position.set(
+      x + (Math.random() - 0.5) * 0.7,
+      y - 0.2,
+      z + (Math.random() - 0.5) * 0.7
+    );
+
+    this.activeParticles.push({
+      mesh,
+      vx: (Math.random() - 0.5) * 0.8,
+      vy: -2.5 - Math.random() * 2.0,
+      vz: (Math.random() - 0.5) * 0.8,
+      rotSpeed: 0,
+      scaleSpeed: -0.4,
+      life: 0.22,
+      maxLife: 0.22,
+      initialScale: 0.8,
+      baseOpacity: 0.9,
+    });
+  }
+
+  /**
+   * Spawns rainbow sparkle trail for Super Star invincibility
+   */
+  public emitStarAura(x: number, y: number, z: number) {
+    if (this.activeParticles.length > 220) return;
+    const mat = this.starMats[Math.floor(Math.random() * this.starMats.length)];
+    const mesh = this.acquireMesh(this.starGeo, mat);
+    mesh.position.set(
+      x + (Math.random() - 0.5) * 0.8,
+      y + 0.3 + Math.random() * 0.6,
+      z + (Math.random() - 0.5) * 0.8
+    );
+
+    this.activeParticles.push({
+      mesh,
+      vx: (Math.random() - 0.5) * 2,
+      vy: 1.5 + Math.random() * 2,
+      vz: (Math.random() - 0.5) * 2,
+      rotSpeed: (Math.random() - 0.5) * 6,
+      scaleSpeed: -0.5,
+      life: 0.3,
+      maxLife: 0.3,
+      initialScale: 1.0,
+      baseOpacity: 0.95,
+    });
+  }
+
+  /**
    * Spawns item box shatter celebration particles
    */
   public emitBoxBreak(x: number, y: number, z: number) {

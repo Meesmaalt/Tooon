@@ -10,7 +10,7 @@ const _physCarFwd = new THREE.Vector3();
 const _physForwardDir = new THREE.Vector3();
 
 export interface CollisionEvent {
-  type: 'car_bump' | 'wall_hit' | 'item_box' | 'rocket_hit' | 'mine_hit' | 'boost_pad';
+  type: 'car_bump' | 'wall_hit' | 'item_box' | 'rocket_hit' | 'blue_rocket_hit' | 'thundercloud_strike' | 'banana_hit' | 'mine_hit' | 'boost_pad';
   racerId: string;
   targetId?: string;
   x: number;
@@ -73,13 +73,17 @@ export function updateRacerPhysics(
     racer.frozenTimer -= dt;
   }
 
-  // Handle turbo
+  // Handle turbo & star
   let speedMultiplier = 1.0;
   if (racer.turboTimer > 0) {
     racer.turboTimer -= dt;
-    speedMultiplier = 1.36;
+    speedMultiplier = Math.max(speedMultiplier, 1.36);
   }
-  if (racer.frozenTimer > 0) {
+  if (racer.starTimer > 0) {
+    racer.starTimer -= dt;
+    speedMultiplier = Math.max(speedMultiplier, 1.45);
+  }
+  if (racer.frozenTimer > 0 && !(racer.starTimer > 0)) {
     speedMultiplier *= 0.58;
   }
 
@@ -87,7 +91,9 @@ export function updateRacerPhysics(
   const topSpeed = maxBaseSpeed * speedMultiplier;
   if (input.throttle > 0) {
     if (racer.speed < topSpeed) {
-      racer.speed += accelPower * input.throttle * dt;
+      racer.speed = Math.min(topSpeed, racer.speed + accelPower * input.throttle * dt);
+    } else {
+      racer.speed = THREE.MathUtils.lerp(racer.speed, topSpeed, dt * 3.0);
     }
   } else if (input.brake > 0) {
     if (racer.speed > -10) {
@@ -164,19 +170,19 @@ export function updateRacerPhysics(
 
   // Height adherence
   const targetY = trackInfo.closestPoint.y;
-  racer.y = THREE.MathUtils.lerp(racer.y, targetY, dt * 14);
-
-  // Weight transfer pitch (squat on acceleration, dive on brake) + Road slope pitch
-  let targetRotX = 0;
-  if (input.throttle > 0 && racer.speed < topSpeed) {
-    targetRotX = -0.04;
-  } else if (input.brake > 0 && racer.speed > 0) {
-    targetRotX = 0.06;
+  if (Math.abs(racer.y - targetY) < 0.02) {
+    racer.y = targetY;
+  } else {
+    racer.y = THREE.MathUtils.lerp(racer.y, targetY, Math.min(1.0, dt * 18.0));
   }
-  // Authentic slope pitch: tilting up on uphills and down on downhills!
+
+  // Authentic road slope pitch (tilt up on uphills, down on downhills smoothly)
   const slopePitch = Math.asin(THREE.MathUtils.clamp(trackInfo.tangent.y, -0.65, 0.65));
-  targetRotX -= slopePitch;
-  racer.rotX = THREE.MathUtils.lerp(racer.rotX || 0, targetRotX, dt * 8.0);
+  let targetRotX = -slopePitch;
+  if (input.brake > 0 && racer.speed > 5) {
+    targetRotX += 0.03;
+  }
+  racer.rotX = THREE.MathUtils.lerp(racer.rotX || 0, targetRotX, Math.min(1.0, dt * 8.0));
 
   // Wrong-Way orientation check against track tangent
   _physCarFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
@@ -302,26 +308,34 @@ export function updateRacerPhysics(
     }
   }
 
-  // Item box pickups (3D distance check to prevent cross-level triggering on bridges)
-  track.itemBoxes.forEach(box => {
-    if (!box.active) return;
-    const boxDist = Math.hypot(racer.x - box.x, (racer.y - box.y) * 1.5, racer.z - box.z);
-    if (boxDist < 3.2) {
-      box.active = false;
-      box.respawnTime = 5; // Respawn after 5 seconds
-      box.mesh.visible = false;
+  // Item box pickups (Strictly 1 box per pass: cannot collect if holding item or in cooldown)
+  if (racer.itemBoxCooldown && racer.itemBoxCooldown > 0) {
+    racer.itemBoxCooldown -= dt;
+  }
 
-      if (onCollision) {
-        onCollision({
-          type: 'item_box',
-          racerId: racer.id,
-          x: box.x,
-          y: box.y,
-          z: box.z,
-        });
+  if (racer.currentItem === null && (!racer.itemBoxCooldown || racer.itemBoxCooldown <= 0)) {
+    for (const box of track.itemBoxes) {
+      if (!box.active) continue;
+      const boxDist = Math.hypot(racer.x - box.x, (racer.y - box.y) * 1.5, racer.z - box.z);
+      if (boxDist < 2.6) {
+        box.active = false;
+        box.respawnTime = 5; // Respawn after 5 seconds
+        box.mesh.visible = false;
+        racer.itemBoxCooldown = 2.5; // Cooldown prevents grabbing a second box in the same row!
+
+        if (onCollision) {
+          onCollision({
+            type: 'item_box',
+            racerId: racer.id,
+            x: box.x,
+            y: box.y,
+            z: box.z,
+          });
+        }
+        break; // Strictly 1 box per pass!
       }
     }
-  });
+  }
 
   // Boost pad trigger (3D distance check)
   track.boostPads.forEach(pad => {
@@ -395,8 +409,14 @@ export function resolveCarCarCollisions(racers: RacerState[], dt: number, onColl
         a.speed -= relSpeed * 0.2;
         b.speed += relSpeed * 0.2;
 
-        // Shield ramming bonus!
-        if (a.hasShield && !b.hasShield) {
+        // Star & Shield ramming bonus!
+        if (a.starTimer > 0 && !(b.starTimer > 0)) {
+          b.spinTimer = 1.6;
+          b.speed *= 0.15;
+        } else if (b.starTimer > 0 && !(a.starTimer > 0)) {
+          a.spinTimer = 1.6;
+          a.speed *= 0.15;
+        } else if (a.hasShield && !b.hasShield) {
           b.spinTimer = 1.2;
           b.speed *= 0.2;
         } else if (b.hasShield && !a.hasShield) {
@@ -420,7 +440,7 @@ export function resolveCarCarCollisions(racers: RacerState[], dt: number, onColl
 }
 
 /**
- * Updates projectiles (Rockets, Mines)
+ * Updates projectiles (Rockets, Blue Rockets, Thunderclouds, Bananas, Mines)
  */
 export function updateProjectiles(
   projectiles: Projectile[],
@@ -439,7 +459,7 @@ export function updateProjectiles(
     }
 
     if (p.type === 'rocket') {
-      // Homing / forward motion
+      // Red Rocket: short-range, homing toward closest opponent ahead
       if (p.targetId) {
         const target = racers.find(r => r.id === p.targetId);
         if (target) {
@@ -447,10 +467,11 @@ export function updateProjectiles(
           const dz = target.z - p.z;
           const targetDist = Math.hypot(dx, dz);
           if (targetDist > 0.1) {
-            const steerX = (dx / targetDist) * 45;
-            const steerZ = (dz / targetDist) * 45;
-            p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 6);
-            p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 6);
+            const steerX = (dx / targetDist) * 52;
+            const steerZ = (dz / targetDist) * 52;
+            p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 7);
+            p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 7);
+            p.y = THREE.MathUtils.lerp(p.y, target.y + 0.4, dt * 5);
           }
         }
       }
@@ -459,16 +480,17 @@ export function updateProjectiles(
       p.z += p.vz * dt;
       p.y += p.vy * dt;
 
-      // Check collision with cars (except owner during first 0.3s)
+      // Collision check with cars (grace period for owner)
       for (const racer of racers) {
-        if (racer.id === p.ownerId && p.life > 4.7) continue;
+        if (racer.id === p.ownerId && p.life > 3.7) continue;
 
         const dist = Math.hypot(racer.x - p.x, racer.z - p.z);
-        if (dist < 2.0) {
+        if (dist < 2.2) {
           p.active = false;
 
-          // If shielded, absorb hit!
-          if (racer.hasShield) {
+          if (racer.starTimer > 0) {
+            // Star invincibility deflects rocket!
+          } else if (racer.hasShield) {
             racer.hasShield = false;
             racer.shieldTimer = 0;
           } else {
@@ -487,16 +509,173 @@ export function updateProjectiles(
           break;
         }
       }
-    } else if (p.type === 'mine') {
-      // Stationary on track, check if anyone runs over it
+    } else if (p.type === 'blue_rocket') {
+      // Blue Rocket: relentless leader hunter! Flies until it catches 1st place!
+      let target = racers.find(r => r.position === 1 && r.id !== p.ownerId);
+      if (!target) {
+        // If owner is 1st place, target 2nd place
+        target = racers.find(r => r.position === 2 && r.id !== p.ownerId);
+      }
+      if (!target) {
+        target = racers.find(r => r.id !== p.ownerId);
+      }
+
+      if (target) {
+        p.targetId = target.id;
+        const dx = target.x - p.x;
+        const dz = target.z - p.z;
+        const targetDist = Math.hypot(dx, dz);
+
+        if (targetDist > 0.1) {
+          const chaseSpeed = 82;
+          const steerX = (dx / targetDist) * chaseSpeed;
+          const steerZ = (dz / targetDist) * chaseSpeed;
+          p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 8);
+          p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 8);
+          p.y = THREE.MathUtils.lerp(p.y, target.y + 0.6, dt * 6);
+        }
+
+        p.x += p.vx * dt;
+        p.z += p.vz * dt;
+        p.y += p.vy * dt;
+
+        // Check distance to target or any car in the way
+        if (targetDist < 2.6) {
+          p.active = false;
+
+          // Mega explosion blast on leader!
+          if (!(target.starTimer > 0)) {
+            if (target.hasShield) {
+              target.hasShield = false;
+              target.shieldTimer = 0;
+            } else {
+              target.spinTimer = 2.8;
+              target.speed = 0;
+            }
+          }
+
+          // Also splash damage nearby cars
+          for (const other of racers) {
+            if (other.id === target.id) continue;
+            const splashDist = Math.hypot(other.x - p.x, other.z - p.z);
+            if (splashDist < 7.5 && !(other.starTimer > 0)) {
+              other.spinTimer = 1.6;
+              other.speed *= 0.3;
+            }
+          }
+
+          onCollision({
+            type: 'blue_rocket_hit',
+            racerId: p.ownerId,
+            targetId: target.id,
+            x: target.x,
+            y: target.y + 0.6,
+            z: target.z,
+          });
+        }
+      } else {
+        // Fallback forward movement
+        p.x += p.vx * dt;
+        p.z += p.vz * dt;
+      }
+    } else if (p.type === 'thundercloud') {
+      // Thundercloud: stays stationary until opponent is near, then chases for ~3.5s and strikes!
+      p.state = p.state || 'idle';
+
+      if (p.state === 'idle') {
+        // Float stationary above track
+        for (const racer of racers) {
+          if (racer.id === p.ownerId && p.life > 58.0) continue; // 2s grace for owner
+
+          const dist = Math.hypot(racer.x - p.x, racer.z - p.z);
+          if (dist < 8.5) {
+            // Opponent detected! Start chasing!
+            p.state = 'chasing';
+            p.targetId = racer.id;
+            p.timer = 3.5; // 3.5s warning countdown!
+            break;
+          }
+        }
+      } else if (p.state === 'chasing') {
+        const target = racers.find(r => r.id === p.targetId);
+        if (target) {
+          // Hover closely right above the victim
+          p.x = THREE.MathUtils.lerp(p.x, target.x, dt * 11);
+          p.y = THREE.MathUtils.lerp(p.y, target.y + 2.3, dt * 9);
+          p.z = THREE.MathUtils.lerp(p.z, target.z, dt * 11);
+
+          p.timer = (p.timer || 3.5) - dt;
+
+          if (p.timer <= 0) {
+            // THUNDERBOLT STRIKE!
+            p.active = false;
+
+            if (target.starTimer > 0) {
+              // Immune with star
+            } else if (target.hasShield) {
+              target.hasShield = false;
+              target.shieldTimer = 0;
+            } else {
+              target.spinTimer = 2.4;
+              target.frozenTimer = 3.2;
+              target.speed *= 0.25;
+            }
+
+            onCollision({
+              type: 'thundercloud_strike',
+              racerId: p.ownerId,
+              targetId: target.id,
+              x: target.x,
+              y: target.y,
+              z: target.z,
+            });
+          }
+        } else {
+          p.active = false;
+        }
+      }
+    } else if (p.type === 'banana') {
+      // Stationary banana peel trap: triggers spinout on anyone who runs over it
       for (const racer of racers) {
-        if (racer.id === p.ownerId && p.life > 14.5) continue; // 0.5s grace for owner
+        if (racer.id === p.ownerId && p.life > 28.5) continue; // 1.5s grace for dropper
+
+        const dist = Math.hypot(racer.x - p.x, racer.z - p.z);
+        if (dist < 2.0) {
+          p.active = false;
+
+          if (racer.starTimer > 0) {
+            // Squashed harmlessly
+          } else if (racer.hasShield) {
+            racer.hasShield = false;
+            racer.shieldTimer = 0;
+          } else {
+            racer.spinTimer = 1.7; // 360 degree spinout
+            racer.speed *= 0.35;
+          }
+
+          onCollision({
+            type: 'banana_hit',
+            racerId: p.ownerId,
+            targetId: racer.id,
+            x: p.x,
+            y: p.y,
+            z: p.z,
+          });
+          break;
+        }
+      }
+    } else if (p.type === 'mine') {
+      // Explosive TNT bomb
+      for (const racer of racers) {
+        if (racer.id === p.ownerId && p.life > 14.5) continue;
 
         const dist = Math.hypot(racer.x - p.x, racer.z - p.z);
         if (dist < 2.2) {
           p.active = false;
 
-          if (racer.hasShield) {
+          if (racer.starTimer > 0) {
+            // Immune
+          } else if (racer.hasShield) {
             racer.hasShield = false;
             racer.shieldTimer = 0;
           } else {

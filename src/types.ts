@@ -1,12 +1,16 @@
 export type PowerUpType = 
-  | 'rocket'       // Direct / Homing missile
-  | 'trio_rockets'  // 3 forward rockets
-  | 'mine'         // TNT explosive / Banana trap behind
-  | 'shield'       // Bubble forcefield
-  | 'turbo'        // Super nitro speed boost
-  | 'lightning'    // Zaps and slows opponents
-  | 'anvil'        // 10-ton weight on race leader
-  | 'repair';      // Fixes spinout / restores health
+  | 'rocket'          // Punane rakett: lühem distants, ajab taga lähimat vastast eespool
+  | 'blue_rocket'     // Sinine rakett: lendab seni kuni 1. koha vastase kätte saab ja teeb mega-plahvatuse
+  | 'thundercloud'    // Äikesepilv: seisab paigal teel, vastase lähedal hakkab teda taga ajama ja lööb välguga
+  | 'banana'          // Banaanikoor: libe lõks teel, mis teeb 360-kraadise spinni
+  | 'star'            // Super Täht: vikerkaare võitmatus, ülikiirus ja vastaste minema pühkimine
+  | 'mine'            // TNT plahvatuslik pomm
+  | 'shield'          // Kaitsev mullkilp
+  | 'turbo'           // Super Nitro kiirendus
+  | 'lightning'       // Välk kõigile vastastele
+  | 'anvil'           // 10T Alasi
+  | 'repair'          // Kiirparandus
+  | 'trio_rockets';   // 3x raketti
 
 export interface CarStats {
   speed: number;        // Top speed factor (1-10)
@@ -74,7 +78,7 @@ export interface CupStanding {
 
 export interface Projectile {
   id: string;
-  type: 'rocket' | 'mine' | 'anvil';
+  type: 'rocket' | 'blue_rocket' | 'thundercloud' | 'banana' | 'mine' | 'anvil';
   ownerId: string;
   x: number;
   y: number;
@@ -85,6 +89,10 @@ export interface Projectile {
   targetId?: string;
   life: number;
   active: boolean;
+  state?: 'idle' | 'chasing' | 'striking';
+  timer?: number;
+  rotY?: number;
+  scale?: number;
 }
 
 export interface PlayerInput {
@@ -133,8 +141,10 @@ export interface RacerState {
   hasShield: boolean;
   shieldTimer: number;
   turboTimer: number;
+  starTimer: number;
   spinTimer: number;
   frozenTimer: number;
+  itemBoxCooldown?: number;
   
   // Visual/Animation
   wheelRot: number;

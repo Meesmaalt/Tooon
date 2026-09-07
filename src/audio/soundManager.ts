@@ -301,6 +301,106 @@ class SoundManager {
     this.scheduleCleanup(osc, [gain], now + 0.42);
   }
 
+  public playThunder() {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+
+    // 1. Initial sharp electric zap
+    const zap = this.ctx.createOscillator();
+    const zapGain = this.ctx.createGain();
+    zap.type = 'sawtooth';
+    zap.frequency.setValueAtTime(1400, now);
+    zap.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+    zapGain.gain.setValueAtTime(0.35, now);
+    zapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+    zap.connect(zapGain);
+    zapGain.connect(this.sfxGain);
+    zap.start(now);
+    this.scheduleCleanup(zap, [zapGain], now + 0.3);
+
+    // 2. Rolling thunder sub-bass rumble
+    if (this.sharedNoiseBuffer) {
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = this.sharedNoiseBuffer;
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(260, now + 0.05);
+      filter.frequency.exponentialRampToValueAtTime(35, now + 0.85);
+
+      const rumbleGain = this.ctx.createGain();
+      rumbleGain.gain.setValueAtTime(0.3, now + 0.05);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+
+      noise.connect(filter);
+      filter.connect(rumbleGain);
+      rumbleGain.connect(this.sfxGain);
+      noise.start(now + 0.05);
+      this.scheduleCleanup(noise, [filter, rumbleGain], now + 0.95);
+    }
+  }
+
+  public playSlip() {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    // Classic comic squeak / banana slip slide
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(650, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.28);
+
+    gain.gain.setValueAtTime(0.28, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    this.scheduleCleanup(osc, [gain], now + 0.32);
+  }
+
+  public playBlueShell() {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    // Ascending alarm siren
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.4);
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    this.scheduleCleanup(osc, [gain], now + 0.48);
+  }
+
+  public playStarFanfare() {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+    notes.forEach((freq, i) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * 0.07);
+      gain.gain.setValueAtTime(0.22, now + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.07 + 0.25);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(now + i * 0.07);
+      this.scheduleCleanup(osc, [gain], now + i * 0.07 + 0.27);
+    });
+  }
+
   public playBump() {
     this.init();
     if (!this.ctx || !this.sfxGain) return;
