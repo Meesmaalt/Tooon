@@ -690,14 +690,17 @@ export class ToonCarEngine {
 
     // Update Item Boxes Respawn & Idle Spin
     this.trackData.itemBoxes.forEach(box => {
-      box.mesh.rotation.y += dt * 2.5;
-      box.mesh.position.y = box.y + Math.sin(now * 0.004) * 0.2;
-
-      if (!box.active) {
+      if (box.active) {
+        box.mesh.rotation.y += dt * 2.5;
+        box.mesh.position.y = box.y + Math.sin(now * 0.004) * 0.2;
+        box.mesh.visible = true;
+      } else {
+        box.mesh.visible = false;
         box.respawnTime -= dt;
         if (box.respawnTime <= 0) {
           box.active = true;
           box.mesh.visible = true;
+          box.mesh.position.y = box.y;
         }
       }
     });
@@ -772,7 +775,7 @@ export class ToonCarEngine {
       soundManager.playBump();
       this.particles.emitSparks(event.x, event.y + 0.3, event.z, 0xffffff, 6);
       if (event.racerId === this.localPlayerId) {
-        this.cameraShake = Math.min(this.cameraShake + 0.15, 0.25);
+        this.cameraShake = Math.min(this.cameraShake + 0.1, 0.18);
       }
     } else if (event.type === 'item_box') {
       soundManager.playItemBox();
@@ -927,7 +930,7 @@ export class ToonCarEngine {
       }
 
       const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY)).normalize();
-      const spawnPos = new THREE.Vector3(racer.x, racer.y + 0.6, racer.z).add(fwd.clone().multiplyScalar(2.5));
+      const spawnPos = new THREE.Vector3(racer.x, racer.y + 1.1, racer.z).add(fwd.clone().multiplyScalar(2.8));
 
       this.projectiles.push({
         id: `rocket_${Date.now()}_${Math.random()}`,
@@ -988,7 +991,7 @@ export class ToonCarEngine {
     } else if (item === 'blue_rocket') {
       soundManager.playRocketLaunch();
       const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY)).normalize();
-      const spawnPos = new THREE.Vector3(racer.x, racer.y + 0.7, racer.z).add(fwd.clone().multiplyScalar(2.5));
+      const spawnPos = new THREE.Vector3(racer.x, racer.y + 1.2, racer.z).add(fwd.clone().multiplyScalar(2.8));
       this.projectiles.push({
         id: `bluerocket_${Date.now()}_${Math.random()}`,
         type: 'blue_rocket',
@@ -1058,23 +1061,32 @@ export class ToonCarEngine {
         this.cameraShake = 0.35;
       }
     }
+
+    // Spawn meshes immediately so rockets are visible the same frame
+    for (const p of this.projectiles) {
+      if (p.active) this.ensureProjectileMesh(p);
+    }
+  }
+
+  private ensureProjectileMesh(p: Projectile) {
+    if (!p.active || this.projectileMeshes.has(p.id)) return;
+    let mesh: THREE.Group;
+    switch (p.type) {
+      case 'blue_rocket': mesh = createBlueRocketMesh(); break;
+      case 'thundercloud': mesh = createThundercloudMesh(); break;
+      case 'banana': mesh = createBananaMesh(); break;
+      case 'mine': mesh = createMineMesh(); break;
+      default: mesh = createRocketMesh(); break;
+    }
+    mesh.position.set(p.x, p.y, p.z);
+    mesh.frustumCulled = false; // never pop out of view mid-flight
+    this.scene.add(mesh);
+    this.projectileMeshes.set(p.id, mesh);
   }
 
   private syncProjectileMeshes() {
     this.projectiles.forEach(p => {
-      if (p.active && !this.projectileMeshes.has(p.id)) {
-        let mesh: THREE.Group;
-        switch (p.type) {
-          case 'blue_rocket': mesh = createBlueRocketMesh(); break;
-          case 'thundercloud': mesh = createThundercloudMesh(); break;
-          case 'banana': mesh = createBananaMesh(); break;
-          case 'mine': mesh = createMineMesh(); break;
-          default: mesh = createRocketMesh(); break;
-        }
-        mesh.position.set(p.x, p.y, p.z);
-        this.scene.add(mesh);
-        this.projectileMeshes.set(p.id, mesh);
-      }
+      if (p.active) this.ensureProjectileMesh(p);
     });
 
     this.projectileMeshes.forEach((mesh, id) => {
@@ -1084,11 +1096,11 @@ export class ToonCarEngine {
         if (p.type === 'rocket' || p.type === 'blue_rocket') {
           mesh.rotation.y = Math.atan2(p.vx, p.vz);
           // Occasional exhaust so rockets stay readable in 3D
-          if (Math.random() < 0.18) {
+          if (Math.random() < 0.45) {
             this.particles.emitNitroFlame(
-              p.x - Math.sin(mesh.rotation.y) * 0.8,
+              p.x - Math.sin(mesh.rotation.y) * 1.2,
               p.y,
-              p.z - Math.cos(mesh.rotation.y) * 0.8,
+              p.z - Math.cos(mesh.rotation.y) * 1.2,
               mesh.rotation.y
             );
           }
@@ -1266,7 +1278,7 @@ export class ToonCarEngine {
       this.isFirstCamFrame = false;
     } else {
       // Softer follow — high alpha caused visible car/camera jerk on uneven frame times
-      const camAlpha = Math.min(1.0, 1.0 - Math.exp(-7.5 * dt));
+      const camAlpha = Math.min(1.0, 1.0 - Math.exp(-6.2 * dt));
       this.camera.position.lerp(_targetCamPos, camAlpha);
       this.currentCamLookTarget.lerp(_camLookTarget, camAlpha);
     }
@@ -1274,13 +1286,14 @@ export class ToonCarEngine {
     this.camera.up.set(0, 1, 0);
     this.camera.lookAt(this.currentCamLookTarget);
 
-    // Camera shake juice (was set on hits but never applied!)
+    // Camera shake — smooth sine, not random every frame (random caused constant micro-jerk)
     if (this.cameraShake > 0.001) {
       const s = this.cameraShake;
-      this.camera.position.x += (Math.random() - 0.5) * s * 0.55;
-      this.camera.position.y += (Math.random() - 0.5) * s * 0.35;
-      this.camera.position.z += (Math.random() - 0.5) * s * 0.55;
-      this.cameraShake = Math.max(0, this.cameraShake - dt * 2.8);
+      const t = performance.now() * 0.045;
+      this.camera.position.x += Math.sin(t * 1.7) * s * 0.22;
+      this.camera.position.y += Math.cos(t * 2.1) * s * 0.12;
+      this.camera.position.z += Math.sin(t * 1.3) * s * 0.22;
+      this.cameraShake = Math.max(0, this.cameraShake - dt * 3.2);
     }
 
     // FOV changes rarely — avoid updateProjectionMatrix every frame (GPU/CPU stutter source)

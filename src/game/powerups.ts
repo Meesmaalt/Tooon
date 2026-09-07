@@ -145,22 +145,24 @@ export function getRandomPowerUp(position: number, totalRacers: number = 6): Pow
 }
 
 // Static shared geometries & materials for projectiles to prevent memory allocations and shader compile freezes
-const rocketBodyGeo = new THREE.CylinderGeometry(0.18, 0.22, 1.2, 10);
+const rocketBodyGeo = new THREE.CylinderGeometry(0.32, 0.38, 2.0, 10);
 rocketBodyGeo.rotateX(Math.PI / 2);
 const rocketBodyMat = new THREE.MeshStandardMaterial({
   color: 0xef4444,
-  metalness: 0.4,
-  roughness: 0.3,
+  emissive: 0xdc2626,
+  emissiveIntensity: 0.65,
+  metalness: 0.35,
+  roughness: 0.25,
 });
 
-const rocketNoseGeo = new THREE.ConeGeometry(0.22, 0.5, 10);
+const rocketNoseGeo = new THREE.ConeGeometry(0.38, 0.85, 10);
 rocketNoseGeo.rotateX(Math.PI / 2);
 const rocketNoseMat = new THREE.MeshStandardMaterial({ color: 0xfacc15 });
 
-const rocketFinGeo = new THREE.BoxGeometry(0.7, 0.05, 0.3);
+const rocketFinGeo = new THREE.BoxGeometry(1.1, 0.08, 0.45);
 const rocketFinMat = new THREE.MeshStandardMaterial({ color: 0x1e293b });
 
-const rocketFlameGeo = new THREE.ConeGeometry(0.15, 0.4, 8);
+const rocketFlameGeo = new THREE.ConeGeometry(0.28, 0.7, 8);
 rocketFlameGeo.rotateX(-Math.PI / 2);
 const rocketFlameMat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
 
@@ -243,35 +245,47 @@ const sharedShieldMat = new THREE.MeshStandardMaterial({
  */
 export function createRocketMesh(): THREE.Group {
   const group = new THREE.Group();
+  group.scale.setScalar(1.35);
 
   const body = new THREE.Mesh(rocketBodyGeo, rocketBodyMat);
+  body.renderOrder = 5;
   group.add(body);
 
   const nose = new THREE.Mesh(rocketNoseGeo, rocketNoseMat);
-  nose.position.z = 0.8;
+  nose.position.z = 1.15;
   group.add(nose);
 
   const fin1 = new THREE.Mesh(rocketFinGeo, rocketFinMat);
-  fin1.position.z = -0.4;
+  fin1.position.z = -0.55;
   group.add(fin1);
 
   const fin2 = new THREE.Mesh(rocketFinGeo, rocketFinMat);
-  fin2.position.z = -0.4;
+  fin2.position.z = -0.55;
   fin2.rotation.z = Math.PI / 2;
   group.add(fin2);
 
   const flame = new THREE.Mesh(rocketFlameGeo, rocketFlameMat);
-  flame.position.z = -0.7;
+  flame.position.z = -1.05;
   group.add(flame);
+
+  // Bright core so rocket never "disappears" against dark tracks
+  const core = new THREE.Mesh(
+    new THREE.SphereGeometry(0.35, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0xfef08a })
+  );
+  core.position.z = 0.2;
+  group.add(core);
 
   return group;
 }
 
 export function createBlueRocketMesh(): THREE.Group {
   const group = new THREE.Group();
+  group.scale.setScalar(1.55);
 
   // Vibrant Blue Body
   const body = new THREE.Mesh(rocketBodyGeo, blueRocketBodyMat);
+  body.renderOrder = 5;
   group.add(body);
 
   // Glowing Cyan Nose

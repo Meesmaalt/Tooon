@@ -2014,8 +2014,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     const tangent = curve.getTangentAt(t).normalize();
     const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
 
-    // 2 boxes across — one clear choice left/right (was 4 → double-pickup + FPS hit)
-    [-2.6, 2.6].forEach(offset => {
+    // ONE box per station (center) — hard guarantee max 1 pickup opportunity per gate
+    [0].forEach(offset => {
       const boxPos = pt.clone().add(right.clone().multiplyScalar(offset));
       boxPos.y = pt.y + 1.35;
 

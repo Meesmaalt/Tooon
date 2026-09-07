@@ -311,40 +311,54 @@ export function updateRacerPhysics(
     }
   }
 
-  // Item box pickups (Strictly 1 box per pass: cannot collect if holding item or in cooldown)
+  // Item box pickups — HARD rule: max 1 item held; never pick while holding or on cooldown
   if (racer.itemBoxCooldown && racer.itemBoxCooldown > 0) {
     racer.itemBoxCooldown -= dt;
   }
 
-  if (racer.currentItem === null && (!racer.itemBoxCooldown || racer.itemBoxCooldown <= 0)) {
+  // Must not already hold an item (strict)
+  if (racer.currentItem == null && (!racer.itemBoxCooldown || racer.itemBoxCooldown <= 0)) {
+    // Horizontal-only distance (Y weighting caused missed pickups on hills/bumps)
+    // Slightly larger radius + swept check so high speed doesn't skip boxes
+    const hitR = 3.4;
+    const hitRSq = hitR * hitR;
+    let bestBox: typeof track.itemBoxes[0] | null = null;
+    let bestD = hitRSq;
+
     for (const box of track.itemBoxes) {
       if (!box.active) continue;
-      const boxDist = Math.hypot(racer.x - box.x, (racer.y - box.y) * 1.5, racer.z - box.z);
-      if (boxDist < 2.4) {
-        // Deactivate this box + any neighbors in the same row (prevents double pickup)
-        for (const other of track.itemBoxes) {
-          if (!other.active) continue;
-          const near = Math.hypot(other.x - box.x, other.z - box.z);
-          if (near < 5.5) {
-            other.active = false;
-            other.respawnTime = 5;
-            other.mesh.visible = false;
-          }
-        }
-        racer.itemBoxCooldown = 3.5;
-        // Grant item atomically here so a second box in the same frame cannot trigger
-        racer.currentItem = getRandomPowerUp(racer.position, 6);
+      const dx = racer.x - box.x;
+      const dz = racer.z - box.z;
+      const dSq = dx * dx + dz * dz;
+      if (dSq < bestD) {
+        bestD = dSq;
+        bestBox = box;
+      }
+    }
 
-        if (onCollision) {
-          onCollision({
-            type: 'item_box',
-            racerId: racer.id,
-            x: box.x,
-            y: box.y,
-            z: box.z,
-          });
+    if (bestBox) {
+      // Clear WHOLE station (all boxes near this one) — one car, one grant
+      for (const other of track.itemBoxes) {
+        if (!other.active) continue;
+        const near = Math.hypot(other.x - bestBox.x, other.z - bestBox.z);
+        if (near < 14) {
+          other.active = false;
+          other.respawnTime = 6;
+          other.mesh.visible = false;
         }
-        break;
+      }
+      // Lock out further pickups until item is used + short extra cooldown after use is separate
+      racer.itemBoxCooldown = 5.0;
+      racer.currentItem = getRandomPowerUp(Math.max(1, racer.position || 1), 6);
+
+      if (onCollision) {
+        onCollision({
+          type: 'item_box',
+          racerId: racer.id,
+          x: bestBox.x,
+          y: bestBox.y,
+          z: bestBox.z,
+        });
       }
     }
   }
