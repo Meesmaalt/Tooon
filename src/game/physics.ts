@@ -33,8 +33,8 @@ export function updateRacerPhysics(
   const isIceTrack = track.theme === 'ice';
   
   // Tuned for polished, realistic arcade racing: satisfying sense of speed, full control, and zero twitchiness
-  const maxBaseSpeed = (20.0 + carDef.stats.speed * 0.75) * speedFactor;
-  const accelPower = (14.0 + carDef.stats.accel * 1.1) * speedFactor;
+  const maxBaseSpeed = (23.0 + carDef.stats.speed * 0.85) * speedFactor;
+  const accelPower = (16.0 + carDef.stats.accel * 1.2) * speedFactor;
   const handlingPower = (2.1 + carDef.stats.handling * 0.15) * (isIceTrack ? 0.90 : 1.0);
 
   // Handle respawn / reset
@@ -277,9 +277,9 @@ export function updateRacerPhysics(
     const candidateIdx = (racer.checkpointIndex + offset) % numCp;
     const distToCp = _physCarPos.distanceTo(track.checkpoints[candidateIdx]);
 
-    if (distToCp < 28) {
+    if (distToCp < 34) {
       // Crossed start/finish line to finish a lap
-      if (candidateIdx === 0 && racer.checkpointIndex > numCp - 6) {
+      if (candidateIdx === 0 && racer.checkpointIndex > numCp - 10) {
         racer.lap += 1;
         const now = Date.now();
         if (racer.currentLapStartTime > 0) {
@@ -301,7 +301,7 @@ export function updateRacerPhysics(
   track.itemBoxes.forEach(box => {
     if (!box.active) return;
     const boxDist = Math.hypot(racer.x - box.x, (racer.y - box.y) * 1.5, racer.z - box.z);
-    if (boxDist < 2.9) {
+    if (boxDist < 3.2) {
       box.active = false;
       box.respawnTime = 5; // Respawn after 5 seconds
       box.mesh.visible = false;
@@ -321,7 +321,7 @@ export function updateRacerPhysics(
   // Boost pad trigger (3D distance check)
   track.boostPads.forEach(pad => {
     const padDist = Math.hypot(racer.x - pad.x, (racer.y - pad.y) * 1.5, racer.z - pad.z);
-    if (padDist < 4.0) {
+    if (padDist < 4.8) {
       racer.turboTimer = 2.2;
       racer.speed = Math.max(racer.speed + 10, maxBaseSpeed * 1.34);
 

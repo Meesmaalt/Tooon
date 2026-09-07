@@ -4,11 +4,11 @@ import { TrackDefinition } from '../types';
 export const TRACK_DEFINITIONS: TrackDefinition[] = [
   {
     id: 'sunny_beach',
-    name: 'Päikeserand (Sunny Beach Riviera)',
+    name: 'Päikeserand (Sunny Beach Riviera GP)',
     theme: 'beach',
     difficulty: 'Easy',
-    description: 'Avar rannapromenaad, tehniline S-šikaan palmisalus, ookeanikalju tõus, rippsild üle abaja ja kaljukoobas!',
-    lengthMeters: 1480,
+    description: 'Avar ookeanipromenaad: 560m peatsirge, Kuldranna kiirtee, panoraamne tuletorni kaljutõus ja lahe rippsild!',
+    lengthMeters: 2680,
     lapsDefault: 3,
     skyColor: 0x60a5fa,
     fogColor: 0x93c5fd,
@@ -17,44 +17,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0xef4444,
     curbColorB: 0xf8fafc,
     points: [
-      // Pikk, lai ja sirge stardisirge piki ookeaniranda
+      // 1. Pikk kuninglik ookeanipromenaadi peatsirge (560m täiesti sirge!)
       [0, 0, 0],
       [0, 0, 60],
-      [0, 0, 130],
-      // Kiire lauge paremkurv rannapromenaadile
-      [40, 0, 190],
-      [110, 0.5, 230],
-      [190, 1.5, 220],
-      // Tehniline S-šikaan läbi rannasalu
-      [240, 3, 160],
-      [220, 5, 90],
-      [250, 8, 20],
-      // Mäkketõus ookeanikaljule
-      [310, 15, -20],
-      [350, 22, 40],
-      [330, 25, 120],
-      // Puidust rippsild üle abaja
-      [270, 25, 170],
-      [190, 23, 185],
-      [120, 19, 160],
-      // Spiraalne laguunilaskumine
-      [65, 13, 100],
-      [45, 8, 30],
-      [80, 4, -30],
-      [135, 2, -70],
-      // Koobastunnel läbi rannakaljude
-      [160, 1, -130],
-      [130, 0.5, -190],
-      [60, 0, -220],
-      [-10, 0, -200],
-      // Rannakaar tagasi stardisirgele
-      [-70, 0, -150],
-      [-80, 0, -90],
-      [-50, 0, -40],
-      [-20, 0, -80],
-      // Sirge lähenemine stardijoonele
-      [0, 0, -110],
-      [0, 0, -50],
+      [0, 0, 120],
+      [0, 0, 180],
+      [0, 0, 240],
+      // 2. Marina Grand Prix kurv ja lai paremkaare sisenemine
+      [35, 1.0, 310],
+      [110, 2.5, 365],
+      [200, 4.0, 390],
+      [295, 5.5, 375],
+      [370, 7.0, 320],
+      // 3. Kuldranna tagasirge (The Golden Sands Highway - 420m täiskiirusel sirge!)
+      [410, 8.5, 240],
+      [425, 10.5, 140],
+      [430, 13.0, 40],
+      [425, 16.0, -60],
+      [410, 19.5, -160],
+      // 4. Tuletorni mäetipp ja panoraamne juuksenõelkurv
+      [375, 23.0, -250],
+      [315, 26.0, -320],
+      [235, 27.0, -350],
+      [150, 26.5, -340],
+      // 5. Suur puidust rippsild kõrgel üle smaragdrohelise lahe (340m sirge viadukt!)
+      [70, 25.0, -310],
+      [-10, 22.0, -260],
+      [-90, 18.0, -210],
+      [-160, 14.0, -160],
+      // 6. Merikoopa tunnel ja jahe kaljukoridor (300m sirge koobas!)
+      [-210, 9.5, -120],
+      [-240, 5.0, -100],
+      [-255, 2.0, -110],
+      [-250, 0.5, -160],
+      [-225, 0.0, -230],
+      [-180, 0.0, -300],
+      // 7. Parabolica lõpukurv puhtalt stardisirgele
+      [-120, 0.0, -355],
+      [-55, 0.0, -375],
+      [-15, 0.0, -360],
+      // Puhas ja pikk lähenemine stardijoonele
+      [0, 0, -320],
+      [0, 0, -240],
+      [0, 0, -160],
+      [0, 0, -80],
     ],
   },
   {
@@ -62,8 +68,8 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     name: 'Kummitusloss (Spooky Citadel & Catacombs)',
     theme: 'spooky',
     difficulty: 'Medium',
-    description: 'Gooti stiilis 8-kujuline ringrada: kindlusemüüri serpentiin, kõrge kivisild otse üle stardisirge ja katakombid!',
-    lengthMeters: 1620,
+    description: 'Gooti stiilis kindluserada: 580m kalmistusirge, kindlusehoovi kiirtee, kõrge õhusild ja katakombid!',
+    lengthMeters: 2720,
     lapsDefault: 3,
     skyColor: 0x090d16,
     fogColor: 0x111827,
@@ -72,42 +78,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x8b5cf6,
     curbColorB: 0x22c55e,
     points: [
-      // Pikk ja sirge allee kalmistul
+      // 1. Pikk ja lai kalmistu peatee (580m sirge gooti laternate vahel)
       [0, 0, 0],
-      [0, 0, 65],
-      [0, 0, 135],
-      // Vasakkurv kindluse eeshoovi
-      [-50, 0.5, 190],
-      [-120, 2, 210],
-      [-185, 4, 180],
-      // Serpentiintõus linnamüürile
-      [-230, 8, 110],
-      [-235, 14, 30],
-      [-195, 19, -40],
-      // Lossi sisehoov ja kõrge kivisild otse üle alloleva stardisirge!
-      [-130, 23, -70],
-      [-65, 25, -45],
-      [0, 25, 0],
-      [75, 24, 45],
-      [145, 22, 70],
-      [210, 18, 50],
-      // Spiraallaskumine lossikeldritesse ja katakombidesse
-      [240, 13, -15],
-      [215, 8, -85],
-      [150, 3, -140],
-      [80, 1, -165],
-      // Hüppemägi üle vana vallikraavi
-      [10, 3, -170],
-      [-60, 5, -190],
-      [-130, 2, -170],
-      // Käänuline läbisõit krüptide vahelt
-      [-160, 0.5, -115],
-      [-135, 0, -50],
-      [-75, 0, -75],
-      [-25, 0, -95],
-      // Sirge allee lähenemine stardile
-      [0, 0, -115],
-      [0, 0, -55],
+      [0, 0, 60],
+      [0, 0, 120],
+      [0, 0, 180],
+      [0, 0, 240],
+      // 2. Kindluse väravatornide lai vasakkaare kurv
+      [-40, 1.0, 310],
+      [-115, 2.5, 365],
+      [-205, 4.5, 390],
+      [-300, 6.5, 375],
+      [-375, 8.5, 320],
+      // 3. Lossi välismüüri sirge (Courtyard Bastion Straight - 400m sirge!)
+      [-415, 10.5, 240],
+      [-430, 13.0, 140],
+      [-430, 16.0, 40],
+      [-415, 20.0, -60],
+      [-385, 24.0, -160],
+      // 4. Peatorni serpentiintõus ja lahingumüüride juuksenõel
+      [-335, 27.5, -250],
+      [-265, 29.0, -315],
+      [-180, 29.0, -345],
+      [-95, 28.0, -335],
+      // 5. Suur kindluse õhusild üle lossiterritooriumi (350m sirge kivi-viadukt!)
+      [-20, 26.5, -300],
+      [60, 23.5, -250],
+      [140, 19.5, -200],
+      [210, 15.0, -150],
+      // 6. Katakombide krüpt ja maa-alune kiirmagistraal (320m sirge krüpt!)
+      [260, 9.5, -110],
+      [290, 5.0, -90],
+      [300, 2.0, -110],
+      [290, 0.5, -160],
+      [265, 0.0, -230],
+      [220, 0.0, -300],
+      // 7. Vallikraavi sild ja lähenemine alleele
+      [155, 0.0, -355],
+      [85, 0.0, -375],
+      [25, 0.0, -360],
+      // Puhas ja pikk allee tagasi stardijoonele
+      [0, 0, -320],
+      [0, 0, -240],
+      [0, 0, -160],
+      [0, 0, -80],
     ],
   },
   {
@@ -115,8 +129,8 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     name: 'Küberkanjon (Neon Cyber Grid)',
     theme: 'cyber',
     difficulty: 'Hard',
-    description: 'GP stiilis küberrada: kiire neoonsirge, teravad linnasik-sakid, gravitatsioonisild kanjoni kohal ja laser-tunnel!',
-    lengthMeters: 1750,
+    description: 'GP stiilis küberrada: 600m neoon-magistraal, 32m kõrgune gravitatsioonisild, laser-tunnel ja kiired šikaanid!',
+    lengthMeters: 2780,
     lapsDefault: 3,
     skyColor: 0x030712,
     fogColor: 0x0f172a,
@@ -125,41 +139,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x06b6d4,
     curbColorB: 0xf43f5e,
     points: [
-      // Suursugune sirge neoon-magistraal
+      // 1. Suursugune neoon-magistraal (600m täiesti sirge megatänav!)
       [0, 0, 0],
-      [0, 0, 70],
-      [0, 0, 145],
-      // Kiire topelt-apeksiga paremkurv
-      [55, 0.5, 205],
-      [140, 2, 235],
-      [220, 4, 200],
-      // Küber-šikaan (terav vasak-parem)
-      [250, 7, 130],
-      [225, 10, 65],
-      [260, 15, 5],
-      [305, 20, -35],
-      // Kõrge antigravitatsiooni viadukt kanjoni kohal
-      [280, 26, -110],
-      [215, 29, -175],
-      [130, 29, -200],
-      [40, 26, -185],
-      // Laser-tunneli laskumine kanjoni põhja
-      [-45, 19, -155],
-      [-115, 13, -125],
-      [-170, 7, -85],
-      // Kanjoni juuksenõelkurv
-      [-215, 3, -35],
-      [-230, 1.5, 25],
-      [-185, 1, 75],
-      [-125, 1, 60],
-      // Hüppesektsioon ja tagasitee
-      [-110, 3.5, 5],
-      [-140, 4, -60],
-      [-120, 1, -115],
-      [-60, 0, -125],
-      // Sirge magistraal enne starti
-      [0, 0, -120],
-      [0, 0, -60],
+      [0, 0, 60],
+      [0, 0, 120],
+      [0, 0, 180],
+      [0, 0, 240],
+      // 2. Neo-Tokyo kõrgkallutatud GP paremkurv
+      [45, 1.5, 315],
+      [125, 3.5, 375],
+      [220, 6.0, 400],
+      [320, 9.0, 385],
+      [400, 12.5, 325],
+      // 3. Antigravitatsiooni viadukti megasirge (420m kiirteelõik 32m kõrgusel!)
+      [440, 16.5, 240],
+      [455, 21.0, 140],
+      [455, 26.0, 40],
+      [440, 31.0, -60],
+      [410, 33.5, -160],
+      // 4. Küberkanjoni kauge juuksenõelkurv neoonsügaviku kohal
+      [360, 32.0, -250],
+      [290, 29.0, -320],
+      [200, 25.0, -350],
+      [110, 21.0, -335],
+      // 5. Laser-tunneli kiire laskuv magistraal (340m laseritega sirge!)
+      [35, 17.0, -300],
+      [-40, 13.0, -250],
+      [-110, 9.0, -200],
+      [-175, 5.0, -150],
+      // 6. Alamlinna küber-metroo tunnel (300m sirge läbi linna!)
+      [-225, 2.5, -110],
+      [-255, 1.0, -90],
+      [-265, 0.5, -110],
+      [-255, 0.0, -160],
+      [-230, 0.0, -230],
+      [-185, 0.0, -300],
+      // 7. Holograafiline lõpukurv tagasi peamagistraalile
+      [-125, 0.0, -355],
+      [-60, 0.0, -375],
+      [-15, 0.0, -360],
+      // Puhas ja pikk neoonsirge stardini
+      [0, 0, -320],
+      [0, 0, -240],
+      [0, 0, -160],
+      [0, 0, -80],
     ],
   },
   {
@@ -167,8 +190,8 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     name: 'Lumine Mäetipp (Frozen Alpine Pass)',
     theme: 'ice',
     difficulty: 'Medium',
-    description: 'Klassikaline alpi mäekuru: tõusvad juuksenõelad, jääkristallide sild, liustikukoobas ja suusalaskumine!',
-    lengthMeters: 1680,
+    description: 'Klassikaline alpi mäekuru: 560m orupõhja sirge, Jääjärve kiirtee, kristall-õhusild ja liustikukoobas!',
+    lengthMeters: 2690,
     lapsDefault: 3,
     skyColor: 0x93c5fd,
     fogColor: 0xdbeafe,
@@ -177,42 +200,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x38bdf8,
     curbColorB: 0xffffff,
     points: [
-      // Pikk sirge lumine alpiorg
+      // 1. Lumine alpioru peatsirge (560m sirge lumiste mändide vahel)
       [0, 0, 0],
-      [0, 0, 65],
-      [0, 0, 135],
-      // Serpentiin 1 (laugev tõus)
-      [65, 3, 185],
-      [140, 8, 205],
-      [195, 13, 170],
-      // Juuksenõel mäenõlval
-      [170, 18, 105],
-      [115, 23, 60],
-      [75, 27, 85],
-      // Serpentiin 2 harjale
-      [85, 31, 150],
-      [140, 34, 190],
-      [215, 36, 155],
-      // Jääkristallide sild üle kuristiku
-      [265, 36, 80],
-      [270, 34, -5],
-      [235, 32, -80],
-      // Liustikukoobas
-      [170, 26, -145],
-      [95, 20, -185],
-      [15, 14, -190],
-      // Suusahüpe ja kiire laskuv S-kurv
-      [-65, 9, -165],
-      [-135, 5, -115],
-      [-175, 2.5, -40],
-      [-140, 1, 20],
-      // Tagasikaar orgu
-      [-90, 0.5, 0],
-      [-70, 0, -55],
-      [-30, 0, -85],
-      // Puhas sirge lähenemine stardile
-      [0, 0, -115],
-      [0, 0, -55],
+      [0, 0, 60],
+      [0, 0, 120],
+      [0, 0, 180],
+      [0, 0, 240],
+      // 2. Mäejalami lauge tõusev paremkurv mäekurusse
+      [40, 2.0, 310],
+      [115, 4.5, 365],
+      [205, 7.5, 390],
+      [300, 11.0, 375],
+      [375, 15.0, 320],
+      // 3. Jääjärve kiirteelõik (Glacier Lake Straight - 400m sirge!)
+      [415, 19.5, 240],
+      [430, 24.5, 140],
+      [430, 29.5, 40],
+      [415, 34.0, -60],
+      [385, 37.5, -160],
+      // 4. Alpi mäetipu serpentiin ja panoraamne juuksenõel
+      [335, 39.0, -250],
+      [265, 39.0, -315],
+      [180, 37.5, -345],
+      [95, 34.0, -335],
+      // 5. Särav jääkristallide sild üle lumekuristiku (340m sirge sillalõik!)
+      [25, 29.5, -300],
+      [-50, 24.5, -250],
+      [-120, 19.0, -200],
+      [-185, 13.5, -150],
+      // 6. Liustikukoopa jäine kiirlaskumine (300m sirge jääkoobas!)
+      [-230, 8.5, -110],
+      [-255, 5.0, -90],
+      [-265, 2.5, -110],
+      [-255, 1.0, -160],
+      [-230, 0.5, -230],
+      [-185, 0.0, -300],
+      // 7. Alpi küla lauge lõpukurv orupõhja tagasi
+      [-125, 0.0, -355],
+      [-60, 0.0, -375],
+      [-15, 0.0, -360],
+      // Puhas sirge alpioru stardisirge
+      [0, 0, -320],
+      [0, 0, -240],
+      [0, 0, -160],
+      [0, 0, -80],
     ],
   },
   {
@@ -220,8 +251,8 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     name: 'Dino Vulkaan (Volcano Caldera & Lava Basin)',
     theme: 'volcano',
     difficulty: 'Hard',
-    description: 'Kraatriharja serpentiin, hõõguv laavasild, dinosauruse ribiluude tunnel ja kuumad tuhasik-sakid!',
-    lengthMeters: 1720,
+    description: 'Kraatriharja serpentiin: 580m basaltmagistraal, 36m kõrgune Obsidiaanirida, laavasild ja dinosauruse ribiluu-tunnel!',
+    lengthMeters: 2740,
     lapsDefault: 3,
     skyColor: 0x450a0a,
     fogColor: 0x7f1d1d,
@@ -230,42 +261,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0xf97316,
     curbColorB: 0xef4444,
     points: [
-      // Pikk sirge basaltlaava stardisirge
+      // 1. Pikk ja sirge basaltlaava stardisirge (580m sirge piki kraatrit)
       [0, 0, 0],
-      [0, 0, 65],
-      [0, 0, 135],
-      // Kraatrijalami kaar
-      [-65, 3, 185],
-      [-150, 8, 210],
-      [-225, 14, 180],
-      // Serpentiintõus kraatriservale
-      [-255, 20, 115],
-      [-230, 25, 40],
-      [-175, 29, -5],
-      // Kraatriserv hõõguva laava kohal
-      [-105, 30, -35],
-      [-20, 30, -55],
-      [65, 29, -45],
-      // Laavasild risti üle kraatri
-      [140, 28, -25],
-      [205, 26, 20],
-      [235, 21, 85],
-      // Dino ribiluude koobastunnel
-      [220, 16, 160],
-      [165, 11, 205],
-      [90, 7, 215],
-      // Laavakaljud ja tulepurske hüppemägi
-      [15, 3, 185],
-      [-35, 1.5, 130],
-      [-45, 4, 65],
-      [-10, 2, 5],
-      // Šikaan laavajõe ääres
-      [35, 1, -45],
-      [15, 0, -95],
-      [-15, 0, -125],
-      // Puhas sirge stardisirge
-      [0, 0, -115],
-      [0, 0, -55],
+      [0, 0, 60],
+      [0, 0, 120],
+      [0, 0, 180],
+      [0, 0, 240],
+      // 2. Vulkaani jalami lai vasakkurv ümber magmalõhede
+      [-40, 2.0, 310],
+      [-115, 4.5, 365],
+      [-205, 7.5, 390],
+      [-300, 11.5, 375],
+      [-375, 16.0, 320],
+      // 3. Kraatriharja obsidiaanisirge (Obsidian Ridge Straight - 400m sirge!)
+      [-415, 21.0, 240],
+      [-430, 26.5, 140],
+      [-430, 31.5, 40],
+      [-415, 35.0, -60],
+      [-385, 36.5, -160],
+      // 4. Keskkraatri harja panoraamne juuksenõel
+      [-335, 36.0, -250],
+      [-265, 34.5, -315],
+      [-180, 32.0, -345],
+      [-95, 29.0, -335],
+      // 5. Hõõguv laavasild otse üle tulise kraatri (350m sirge laavasild!)
+      [-20, 25.5, -300],
+      [60, 21.5, -250],
+      [140, 17.0, -200],
+      [210, 12.0, -150],
+      // 6. Dinosauruse ribiluude tunnel ja tuhaväli (320m sirge luukeretunnel!)
+      [260, 7.5, -110],
+      [290, 4.0, -90],
+      [300, 1.5, -110],
+      [290, 0.5, -160],
+      [265, 0.0, -230],
+      [220, 0.0, -300],
+      // 7. Tuhabasseini lai tagasikaar
+      [155, 0.0, -355],
+      [85, 0.0, -375],
+      [25, 0.0, -360],
+      // Puhas ja pikk basalttee stardini
+      [0, 0, -320],
+      [0, 0, -240],
+      [0, 0, -160],
+      [0, 0, -80],
     ],
   },
   {
@@ -273,8 +312,8 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     name: 'Taevalinn (Sky High Metropolis)',
     theme: 'sky',
     difficulty: 'Hard',
-    description: 'Futuristlik kiirtee pilvedes: spiraalne tornitõus, taevasild pilvede kohal ja mitmetasandiline aerotunnel!',
-    lengthMeters: 1850,
+    description: 'Futuristlik kiirtee pilvedes: 580m pilvekiirtee, 40m kõrgune Sky Deck, klaasist taevasild ja aerotunnel!',
+    lengthMeters: 2760,
     lapsDefault: 3,
     skyColor: 0x38bdf8,
     fogColor: 0xbae6fd,
@@ -283,37 +322,50 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     curbColorA: 0x3b82f6,
     curbColorB: 0xfacc15,
     points: [
-      // Pikk sirge kiirtee pilvedes
-      [0, 8, 0],
-      [0, 8, 70],
-      [0, 8, 145],
-      // Kiire tõus pilvelõhkuja suunas
-      [65, 10, 215],
-      [150, 15, 245],
-      [235, 21, 220],
-      // Spiraaltõus torni tippu
-      [285, 27, 155],
-      [295, 33, 80],
-      [260, 38, 5],
-      [195, 41, -45],
-      // Hõljuv klaasist taevasild pilvede kohal
-      [110, 41, -85],
-      [15, 39, -115],
-      [-80, 36, -115],
-      // Laskuv silmus üle teise teelõigu
-      [-160, 30, -80],
-      [-200, 23, -25],
-      [-185, 17, 45],
-      [-120, 13, 85],
-      // Aerotunnel tornide vahel
-      [-45, 10, 85],
-      [15, 9, 50],
-      [45, 8.5, -5],
-      [25, 8, -55],
-      [-25, 8, -95],
-      // Puhas sirge stardisirge
-      [0, 8, -125],
-      [0, 8, -60],
+      // 1. Pikk ja sirge kiirtee pilvedes kõrgusel 10m (580m täiskiirusel sirge!)
+      [0, 10, 0],
+      [0, 10, 60],
+      [0, 10, 120],
+      [0, 10, 180],
+      [0, 10, 240],
+      // 2. Megatower torni tõusev GP paremkurv
+      [45, 12.0, 315],
+      [125, 15.0, 375],
+      [220, 19.0, 400],
+      [320, 23.5, 385],
+      [400, 28.5, 325],
+      // 3. Katuseterrasside pilvekiirtee (Sky Deck Straight - 420m sirge 38m kõrgusel!)
+      [440, 33.0, 240],
+      [455, 37.0, 140],
+      [455, 40.0, 40],
+      [440, 41.5, -60],
+      [410, 41.0, -160],
+      // 4. Stratosfääri panoraamne juuksenõelkurv tornitippude kohal
+      [360, 39.0, -250],
+      [290, 36.0, -320],
+      [200, 32.5, -350],
+      [110, 28.5, -335],
+      // 5. Läbipaistev klaasist taevasild pilvede kohal (340m sirge klaassild!)
+      [35, 24.5, -300],
+      [-40, 20.5, -250],
+      [-110, 16.5, -200],
+      [-175, 13.5, -150],
+      // 6. Kiire laskuv aerotunnel kaksiktornide vahel (300m sirge aerotunnel!)
+      [-225, 11.5, -110],
+      [-255, 10.5, -90],
+      [-265, 10.0, -110],
+      [-255, 10.0, -160],
+      [-230, 10.0, -230],
+      [-185, 10.0, -300],
+      // 7. Aerodünaamiline lõpukurv tagasi peakiirteele
+      [-125, 10.0, -355],
+      [-60, 10.0, -375],
+      [-15, 10.0, -360],
+      // Puhas ja pikk taevatee stardini
+      [0, 10, -320],
+      [0, 10, -240],
+      [0, 10, -160],
+      [0, 10, -80],
     ],
   },
 ];
@@ -1257,8 +1309,8 @@ function createCliffs(
   const upVec = new THREE.Vector3(0, 1, 0);
 
   const cliffRanges = [
-    { startT: 0.08, endT: 0.32, side: 1, height: 28, offset: trackWidth * 0.5 + 4.5 },
-    { startT: 0.68, endT: 0.90, side: -1, height: 34, offset: trackWidth * 0.5 + 4.5 },
+    { startT: 0.16, endT: 0.38, side: 1, height: 26, offset: trackWidth * 0.5 + 8.5 },
+    { startT: 0.58, endT: 0.82, side: -1, height: 28, offset: trackWidth * 0.5 + 8.5 },
   ];
 
   cliffRanges.forEach(cr => {
@@ -1366,8 +1418,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   // Track surface sectors for dynamic terrain transitions
   const sectors = getTrackSectors(trackDef.theme);
 
-  // Build dense centerline (520 points along spline) for accurate physics on long multi-level tracks
-  const denseCount = 520;
+  // Build dense centerline (720 points along spline) for accurate physics on long multi-level tracks
+  const denseCount = 720;
   const centerlinePoints: CenterlinePoint[] = [];
   const upVec = new THREE.Vector3(0, 1, 0);
 
@@ -1521,7 +1573,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   };
 
   // 1. Generate Road Ribbon Geometry with multi-surface materials
-  const segments = 340;
+  const segments = 460;
   const roadGeo = new THREE.BufferGeometry();
   const roadVertices: number[] = [];
   const roadUvs: number[] = [];
@@ -1657,26 +1709,32 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       shoulderIndices.push(shIdx + 3, shIdx + 7, shIdx + 6);
     }
 
-    // High Multi-Level Bridge Pillars: When track is elevated (pt.y > 3.2m), create massive structural pillars reaching down to ground level!
-    if (pt.y > 3.2 && i % 7 === 0) {
-      const pillarHeight = pt.y;
+    // High Multi-Level Bridge Pillars: When track is elevated (pt.y >= 7.0m), create structural viaduct pillars strictly underneath the road deck
+    if (pt.y >= 7.0 && i % 8 === 0) {
+      const pillarHeight = Math.max(1.0, pt.y - 1.2);
       const pillarGroup = new THREE.Group();
       pillarGroup.position.set(pt.x, pillarHeight * 0.5, pt.z);
+      const rotY = Math.atan2(tangent.x, tangent.z);
+      pillarGroup.rotation.y = rotY;
 
-      // Main structural support column
-      const pillar = new THREE.Mesh(
-        new THREE.CylinderGeometry(2.0, 2.8, pillarHeight, 8),
-        bridgePillarMat
-      );
-      pillar.castShadow = true;
-      pillarGroup.add(pillar);
+      // Twin structural support columns situated to the sides of the road
+      const colDist = trackWidth * 0.5 + 1.8;
+      [-colDist, colDist].forEach(sideX => {
+        const pillar = new THREE.Mesh(
+          new THREE.CylinderGeometry(1.2, 1.6, pillarHeight, 8),
+          bridgePillarMat
+        );
+        pillar.position.set(sideX, 0, 0);
+        pillar.castShadow = true;
+        pillarGroup.add(pillar);
+      });
 
-      // Horizontal cross-girder beam supporting the road deck
+      // Horizontal cross-girder beam positioned strictly underneath the road deck
       const beam = new THREE.Mesh(
-        new THREE.BoxGeometry(trackWidth + curbW * 2 + 2.0, 1.4, 3.2),
+        new THREE.BoxGeometry(trackWidth + curbW * 2 + 2.4, 0.9, 2.2),
         bridgePillarMat
       );
-      beam.position.y = pillarHeight * 0.5 - 0.7;
+      beam.position.y = pillarHeight * 0.5 - 0.45;
       pillarGroup.add(beam);
 
       decorations.add(pillarGroup);
@@ -1785,8 +1843,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   shoulderMesh.receiveShadow = true;
   decorations.add(shoulderMesh);
 
-  // 2. Checkpoints along spline for lap progress (32 checkpoints, spaced ~20-25m)
-  const numCheckpoints = 32;
+  // 2. Checkpoints along spline for lap progress (48 checkpoints along larger track)
+  const numCheckpoints = 48;
   const checkpoints: THREE.Vector3[] = [];
   for (let i = 0; i < numCheckpoints; i++) {
     const pt = curve.getPointAt(i / numCheckpoints);
@@ -1889,7 +1947,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   // 4. Item Boxes distributed across the long track (Shared geometries and materials for instant 60fps rendering)
   const itemBoxes: ItemBoxPosition[] = [];
-  const itemStations = [0.08, 0.24, 0.40, 0.56, 0.72, 0.88];
+  const itemStations = [0.06, 0.18, 0.31, 0.44, 0.58, 0.71, 0.85, 0.94];
 
   // Shared geometries and materials for all item boxes to prevent GPU state stalls and memory overhead
   const sharedCubeGeo = new THREE.BoxGeometry(1.35, 1.35, 1.35);
@@ -1955,7 +2013,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   // 5. Speed Boost Pads on Track with pulsing chevron arrows & neon borders
   const boostPads: BoostPadPosition[] = [];
-  const boostStations = [0.16, 0.32, 0.48, 0.65, 0.82];
+  const boostStations = [0.12, 0.25, 0.38, 0.52, 0.66, 0.79, 0.92];
 
   boostStations.forEach(t => {
     const pt = curve.getPointAt(t);
@@ -2007,12 +2065,31 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     });
   });
 
+  // Helper to ensure scenery, trees, and props never spawn inside the start straight corridor or overlap any track section
+  const isTooCloseToTrack = (pos: THREE.Vector3, minDist: number = 14.0): boolean => {
+    // Clear start straightaway corridor: Z between -440 and +280, X between -32 and +32
+    if (Math.abs(pos.x) < 32 && pos.z > -440 && pos.z < 280) {
+      return true;
+    }
+    // Proximity check against track curve centerline
+    const samples = 90;
+    for (let s = 0; s < samples; s++) {
+      const samplePt = curve.getPointAt(s / samples);
+      const dx = pos.x - samplePt.x;
+      const dz = pos.z - samplePt.z;
+      if (dx * dx + dz * dz < minDist * minDist) {
+        return true;
+      }
+    }
+    return false;
+  };
+
   // 6. Rich Themed Scenery Props
   let waterMesh: THREE.Mesh | undefined;
 
   if (trackDef.theme === 'beach') {
     // Large Animated Tropical Ocean
-    const oceanGeo = new THREE.PlaneGeometry(1200, 1200, 32, 32);
+    const oceanGeo = new THREE.PlaneGeometry(3400, 3400, 48, 48);
     const oceanMat = new THREE.MeshStandardMaterial({
       color: 0x0284c7,
       roughness: 0.15,
@@ -2023,7 +2100,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     });
     waterMesh = new THREE.Mesh(oceanGeo, oceanMat);
     waterMesh.rotation.x = -Math.PI / 2;
-    waterMesh.position.y = -0.4;
+    waterMesh.position.y = -1.2;
     waterMesh.receiveShadow = true;
     decorations.add(waterMesh);
 
@@ -2038,6 +2115,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       const propPos = pt.clone().add(right.multiplyScalar(dist));
       propPos.y = Math.max(0, pt.y);
+
+      if (isTooCloseToTrack(propPos, 13.5)) {
+        continue;
+      }
 
       if (i % 3 === 0) {
         // Detailed Cartoon Palm Tree
@@ -2208,6 +2289,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       const propPos = pt.clone().add(right.multiplyScalar(dist));
       propPos.y = pt.y;
 
+      if (isTooCloseToTrack(propPos, 13.5)) {
+        continue;
+      }
+
       const propGroup = new THREE.Group();
       propGroup.position.copy(propPos);
 
@@ -2304,6 +2389,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       const pPos = pt.clone().add(right.multiplyScalar(dist));
       pPos.y = pt.y;
 
+      if (isTooCloseToTrack(pPos, 13.5)) {
+        continue;
+      }
+
       const pGroup = new THREE.Group();
       pGroup.position.copy(pPos);
 
@@ -2343,6 +2432,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       const propPos = pt.clone().add(right.multiplyScalar(dist));
       propPos.y = pt.y;
+
+      if (isTooCloseToTrack(propPos, 13.5)) {
+        continue;
+      }
 
       const propGroup = new THREE.Group();
       propGroup.position.copy(propPos);
@@ -2434,7 +2527,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     }
   } else if (trackDef.theme === 'volcano') {
     // 1. Glowing Molten Magma / Lava Lake below
-    const lavaGeo = new THREE.PlaneGeometry(1600, 1600, 32, 32);
+    const lavaGeo = new THREE.PlaneGeometry(3400, 3400, 48, 48);
     const lavaMat = new THREE.MeshStandardMaterial({
       color: 0xdc2626,
       emissive: 0x991b1b,
@@ -2445,7 +2538,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     });
     waterMesh = new THREE.Mesh(lavaGeo, lavaMat);
     waterMesh.rotation.x = -Math.PI / 2;
-    waterMesh.position.y = -0.6;
+    waterMesh.position.y = -1.2;
     decorations.add(waterMesh);
 
     // 2. Prehistoric Giant Dinosaur Ribcage Tunnel spanning over track
@@ -2477,6 +2570,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       const pPos = pt.clone().add(right.multiplyScalar(dist));
       pPos.y = pt.y;
+
+      if (isTooCloseToTrack(pPos, 13.5)) {
+        continue;
+      }
 
       const pGroup = new THREE.Group();
       pGroup.position.copy(pPos);
@@ -2527,7 +2624,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   } else if (trackDef.theme === 'sky') {
     // 1. Floating Fluffy White Cloud Sea below
-    const cloudSeaGeo = new THREE.PlaneGeometry(1800, 1800, 32, 32);
+    const cloudSeaGeo = new THREE.PlaneGeometry(3800, 3800, 48, 48);
     const cloudSeaMat = new THREE.MeshStandardMaterial({
       color: 0xf0fdf4,
       roughness: 0.9,
@@ -2552,6 +2649,10 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       const pPos = pt.clone().add(right.multiplyScalar(dist));
       pPos.y = pt.y - 12;
+
+      if (isTooCloseToTrack(pPos, 13.5)) {
+        continue;
+      }
 
       const pGroup = new THREE.Group();
       pGroup.position.copy(pPos);
@@ -2590,7 +2691,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const gsRight = new THREE.Vector3().crossVectors(gsTangent, upVec).normalize();
   const gsRotY = Math.atan2(gsTangent.x, gsTangent.z);
 
-  grandstandGroup.position.copy(gsPt).add(gsRight.clone().multiplyScalar(halfW + 6.5));
+  grandstandGroup.position.copy(gsPt).add(gsRight.clone().multiplyScalar(halfW + 11.0));
   grandstandGroup.position.y = gsPt.y;
   grandstandGroup.rotation.y = gsRotY + Math.PI; // Face inward towards the track
 
@@ -2900,23 +3001,23 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     decorations.add(blimpGroup);
   } else if (trackDef.theme === 'ice') {
     // Giant Snowy Mountain Peaks along horizon
-    const peakGeo = new THREE.ConeGeometry(55, 110, 6);
+    const peakGeo = new THREE.ConeGeometry(95, 180, 8);
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
-    const snowCapGeo = new THREE.ConeGeometry(24, 45, 6);
+    const snowCapGeo = new THREE.ConeGeometry(42, 75, 8);
     const snowCapMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
 
-    for (let m = 0; m < 8; m++) {
-      const angle = (m / 8) * Math.PI * 2;
-      const dist = 360 + (m % 2) * 50;
+    for (let m = 0; m < 10; m++) {
+      const angle = (m / 10) * Math.PI * 2;
+      const dist = 680 + (m % 2) * 90;
       const mGroup = new THREE.Group();
       mGroup.position.set(Math.cos(angle) * dist, -5, Math.sin(angle) * dist);
 
       const mountain = new THREE.Mesh(peakGeo, rockMat);
-      mountain.position.y = 55;
+      mountain.position.y = 90;
       mGroup.add(mountain);
 
       const snowCap = new THREE.Mesh(snowCapGeo, snowCapMat);
-      snowCap.position.y = 88;
+      snowCap.position.y = 145;
       mGroup.add(snowCap);
 
       decorations.add(mGroup);
@@ -2924,41 +3025,41 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   } else if (trackDef.theme === 'volcano') {
     // Giant Smoldering Volcano with glowing magma crater on horizon
     const vGroup = new THREE.Group();
-    vGroup.position.set(0, 0, -320);
+    vGroup.position.set(0, 0, -620);
 
     const volcanoCone = new THREE.Mesh(
-      new THREE.CylinderGeometry(28, 95, 120, 16),
+      new THREE.CylinderGeometry(55, 190, 220, 16),
       new THREE.MeshStandardMaterial({ color: 0x1c1917, roughness: 0.95 })
     );
-    volcanoCone.position.y = 60;
+    volcanoCone.position.y = 110;
     vGroup.add(volcanoCone);
 
     // Glowing bubbling magma crater at the peak
     const craterMagma = new THREE.Mesh(
-      new THREE.CylinderGeometry(25, 25, 4, 16),
+      new THREE.CylinderGeometry(50, 50, 6, 16),
       new THREE.MeshStandardMaterial({
         color: 0xef4444,
         emissive: 0xd97706,
         emissiveIntensity: 1.2,
       })
     );
-    craterMagma.position.y = 120;
+    craterMagma.position.y = 220;
     vGroup.add(craterMagma);
 
     decorations.add(vGroup);
   } else if (trackDef.theme === 'sky') {
     // Floating Solar Sky Station in the stratosphere
     const sGroup = new THREE.Group();
-    sGroup.position.set(120, 85, -160);
+    sGroup.position.set(240, 120, -360);
 
     const hub = new THREE.Mesh(
-      new THREE.SphereGeometry(14, 16, 16),
+      new THREE.SphereGeometry(22, 16, 16),
       new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.2, metalness: 0.85 })
     );
     sGroup.add(hub);
 
     const solarRing = new THREE.Mesh(
-      new THREE.TorusGeometry(26, 1.2, 8, 32),
+      new THREE.TorusGeometry(40, 1.8, 8, 32),
       new THREE.MeshStandardMaterial({ color: 0x0284c7, emissive: 0x0369a1, emissiveIntensity: 0.9 })
     );
     solarRing.rotation.x = Math.PI / 2.3;

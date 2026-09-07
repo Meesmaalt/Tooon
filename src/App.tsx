@@ -84,6 +84,10 @@ export default function App() {
       console.log('Connected to Toon Car game server');
     };
 
+    ws.onerror = (err) => {
+      console.warn('WebSocket connection warning/error:', err);
+    };
+
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);

@@ -234,20 +234,9 @@ export class ToonCarEngine {
       this.scene.add(box.mesh);
     });
 
-    // Boost pad visual meshes
+    // Boost pad visual meshes (styled 3D chevron pads with side guide rails)
     this.trackData.boostPads.forEach(pad => {
-      const padGeo = new THREE.PlaneGeometry(3.5, 5);
-      padGeo.rotateX(-Math.PI / 2);
-      const padMat = new THREE.MeshStandardMaterial({
-        color: 0xfacc15,
-        emissive: 0xf59e0b,
-        emissiveIntensity: 0.8,
-        roughness: 0.2,
-      });
-      const padMesh = new THREE.Mesh(padGeo, padMat);
-      padMesh.position.set(pad.x, pad.y, pad.z);
-      padMesh.rotation.y = pad.rotY;
-      this.scene.add(padMesh);
+      this.scene.add(pad.mesh);
     });
 
     // Fluffy cartoon clouds
