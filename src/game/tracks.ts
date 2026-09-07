@@ -420,6 +420,7 @@ export interface TrackInfo {
   distanceToCenter: number;
   signedDistance: number;
   t: number;
+  closestIndex: number;
   isOffroad: boolean;
   isOnCurb: boolean;
   isWallHit: boolean;
@@ -434,7 +435,8 @@ export interface TrackData {
   trackWidth: number;
   checkpoints: THREE.Vector3[];
   centerlinePoints: CenterlinePoint[];
-  getTrackInfo: (pos: THREE.Vector3) => TrackInfo;
+  getTrackInfo: (pos: THREE.Vector3, hintIdx?: number) => TrackInfo;
+  getCenterlinePointAt: (t: number) => CenterlinePoint;
   itemBoxes: ItemBoxPosition[];
   boostPads: BoostPadPosition[];
   decorations: THREE.Group;
@@ -1452,6 +1454,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     distanceToCenter: 0,
     signedDistance: 0,
     t: 0,
+    closestIndex: 0,
     isOffroad: false,
     isOnCurb: false,
     isWallHit: false,
@@ -1461,43 +1464,71 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     surfaceIcon: '🛣️',
   };
 
-  // High-accuracy continuous 3D multi-level track query helper
-  const getTrackInfo = (pos: THREE.Vector3): TrackInfo => {
+  // Instant O(1) centerline point lookup without any spline arc calculation or allocations
+  const getCenterlinePointAt = (t: number): CenterlinePoint => {
+    const safeT = ((t % 1.0) + 1.0) % 1.0;
+    const idx = Math.min(denseCount - 1, Math.max(0, Math.floor(safeT * denseCount)));
+    return centerlinePoints[idx];
+  };
+
+  // High-accuracy continuous 3D multi-level track query helper (optimized with localized window search)
+  const getTrackInfo = (pos: THREE.Vector3, hintIdx?: number): TrackInfo => {
     const pX = pos.x;
     const pY = pos.y;
     const pZ = pos.z;
 
-    // 1. Fast coarse search (step 8) taking into account 3D elevation
     let bestDistSq = Infinity;
-    let coarseBestIdx = 0;
-    const step = 8;
-    for (let i = 0; i < denseCount; i += step) {
-      const cp = centerlinePoints[i].point;
-      const dx = cp.x - pX;
-      const dy = cp.y - pY;
-      const dz = cp.z - pZ;
-      // Weight Y separation so multi-level overpasses and bridges reliably lock to the current deck!
-      const dSq = dx * dx + dz * dz + dy * dy * 3.5;
-      if (dSq < bestDistSq) {
-        bestDistSq = dSq;
-        coarseBestIdx = i;
+    let bestIdx = 0;
+
+    // Fast-path: Check localized window around previous known position (only ~35 checks!)
+    if (hintIdx !== undefined && hintIdx >= 0 && hintIdx < denseCount) {
+      const windowStart = hintIdx - 12;
+      const windowEnd = hintIdx + 24;
+      for (let i = windowStart; i <= windowEnd; i++) {
+        const idx = (i + denseCount) % denseCount;
+        const cp = centerlinePoints[idx].point;
+        const dx = cp.x - pX;
+        const dy = cp.y - pY;
+        const dz = cp.z - pZ;
+        const dSq = dx * dx + dz * dz + dy * dy * 3.5;
+        if (dSq < bestDistSq) {
+          bestDistSq = dSq;
+          bestIdx = idx;
+        }
       }
     }
 
-    // Refine around coarse best within [-step, +step]
-    let bestIdx = coarseBestIdx;
-    const startSearch = coarseBestIdx - step;
-    const endSearch = coarseBestIdx + step;
-    for (let i = startSearch; i <= endSearch; i++) {
-      const idx = (i + denseCount) % denseCount;
-      const cp = centerlinePoints[idx].point;
-      const dx = cp.x - pX;
-      const dy = cp.y - pY;
-      const dz = cp.z - pZ;
-      const dSq = dx * dx + dz * dz + dy * dy * 3.5;
-      if (dSq < bestDistSq) {
-        bestDistSq = dSq;
-        bestIdx = idx;
+    // Fallback: If no hint, or vehicle was teleported/respawned far away (> 35m)
+    if (bestDistSq > 1225) {
+      bestDistSq = Infinity;
+      const step = 16;
+      let coarseBestIdx = 0;
+      for (let i = 0; i < denseCount; i += step) {
+        const cp = centerlinePoints[i].point;
+        const dx = cp.x - pX;
+        const dy = cp.y - pY;
+        const dz = cp.z - pZ;
+        const dSq = dx * dx + dz * dz + dy * dy * 3.5;
+        if (dSq < bestDistSq) {
+          bestDistSq = dSq;
+          coarseBestIdx = i;
+        }
+      }
+
+      bestIdx = coarseBestIdx;
+      const startSearch = coarseBestIdx - step;
+      const endSearch = coarseBestIdx + step;
+      for (let i = startSearch; i <= endSearch; i++) {
+        const idx = (i + denseCount) % denseCount;
+        const cp = centerlinePoints[idx].point;
+        const dx = cp.x - pX;
+        const dy = cp.y - pY;
+        const dz = cp.z - pZ;
+        const dSq = dx * dx + dz * dz + dy * dy * 3.5;
+        if (dSq < bestDistSq) {
+          bestDistSq = dSq;
+          bestIdx = idx;
+        }
       }
     }
 
@@ -1562,6 +1593,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     _cachedTrackInfo.distanceToCenter = distToCenter;
     _cachedTrackInfo.signedDistance = signedDistance;
     _cachedTrackInfo.t = finalT;
+    _cachedTrackInfo.closestIndex = bestIdx;
     _cachedTrackInfo.isOffroad = isOffroad;
     _cachedTrackInfo.isOnCurb = isOnCurb;
     _cachedTrackInfo.isWallHit = isWallHit;
@@ -3113,6 +3145,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     checkpoints,
     centerlinePoints,
     getTrackInfo,
+    getCenterlinePointAt,
     itemBoxes,
     boostPads,
     decorations,

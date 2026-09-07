@@ -53,6 +53,11 @@ export function createAIControllers(racers: RacerState[]): Map<string, AIOpponen
   return map;
 }
 
+// Static scratch vectors for zero heap garbage collection during AI updates
+const _aiCarPos = new THREE.Vector3();
+const _aiDesiredTarget = new THREE.Vector3();
+const _aiToTarget = new THREE.Vector3();
+
 /**
  * Calculates smooth, intelligent AI inputs (throttle, steer, drift, useItem, overtaking)
  */
@@ -68,19 +73,24 @@ export function computeAIInput(
   aiCtrl.tauntCooldown -= dt;
   aiCtrl.reactionTimer -= dt;
 
-  const carPos = new THREE.Vector3(racer.x, racer.y, racer.z);
-  const trackInfo = track.getTrackInfo(carPos);
+  _aiCarPos.set(racer.x, racer.y, racer.z);
+
+  // Fast O(1) track orientation lookup using racer's trackT or checkpointIndex
+  const baseT = racer.trackT !== undefined && !isNaN(racer.trackT)
+    ? racer.trackT
+    : (racer.checkpointIndex / Math.max(1, track.checkpoints.length));
+
+  const curCenterPt = track.getCenterlinePointAt(baseT);
 
   // 1. Check if car is pointing backwards or in wrong direction
-  let trackTangent = track.curve.getTangentAt(trackInfo.t).normalize();
-  let trackHeading = Math.atan2(trackTangent.x, trackTangent.z);
+  const trackTangent = curCenterPt.tangent;
+  const trackHeading = Math.atan2(trackTangent.x, trackTangent.z);
   let headingDiff = trackHeading - racer.rotY;
   while (headingDiff > Math.PI) headingDiff -= Math.PI * 2;
   while (headingDiff < -Math.PI) headingDiff += Math.PI * 2;
 
   // If severely spun around (> 110 degrees), quickly steer towards track heading
   if (Math.abs(headingDiff) > 1.95 || racer.isWrongWay) {
-    // Steer in direction that minimizes headingDiff
     const recoverySteer = headingDiff > 0 ? 1.0 : -1.0;
     return {
       throttle: racer.speed < 12 ? 0.9 : 0.4,
@@ -120,27 +130,24 @@ export function computeAIInput(
   // Smoothly blend lane offset
   aiCtrl.laneOffset = THREE.MathUtils.lerp(aiCtrl.laneOffset, aiCtrl.targetLane, dt * 2.8);
 
-  // 3. Smooth Lookahead Point along Continuous Spline
+  // 3. Smooth Lookahead Point along Continuous Spline (O(1) instant indexing)
   // Scales with current vehicle speed (14m to 32m ahead)
   const lookaheadDist = THREE.MathUtils.clamp(racer.speed * 0.45 + 14, 15, 32);
-  const totalLength = track.curve.getLength() || 700;
+  const totalLength = 2400; // Estimated track arc length
   const lookaheadFraction = lookaheadDist / totalLength;
-  const safeBaseT = isNaN(trackInfo.t) ? 0 : ((trackInfo.t % 1.0) + 1.0) % 1.0;
-  const lookaheadT = ((safeBaseT + lookaheadFraction) % 1.0 + 1.0) % 1.0;
+  const lookaheadT = ((baseT + lookaheadFraction) % 1.0 + 1.0) % 1.0;
 
-  const targetPt = track.curve.getPointAt(lookaheadT);
-  const targetTangent = track.curve.getTangentAt(lookaheadT).normalize();
-  const upVec = new THREE.Vector3(0, 1, 0);
-  const targetRight = new THREE.Vector3().crossVectors(targetTangent, upVec).normalize();
+  const targetPt = track.getCenterlinePointAt(lookaheadT);
+  const targetTangent = targetPt.tangent;
+  const targetRight = targetPt.right;
 
   // Offset along the track cross-section (stay safely inside road width)
   const safeLane = THREE.MathUtils.clamp(aiCtrl.laneOffset, -4.5, 4.5);
-  const desiredTarget = targetPt.clone().addScaledVector(targetRight, safeLane);
+  _aiDesiredTarget.copy(targetPt.point).addScaledVector(targetRight, safeLane);
 
   // 4. Compute Steering Angle
-  // Left = -1, Right = +1
-  const toTarget = new THREE.Vector3().subVectors(desiredTarget, carPos);
-  const targetAngle = Math.atan2(toTarget.x, toTarget.z);
+  _aiToTarget.subVectors(_aiDesiredTarget, _aiCarPos);
+  const targetAngle = Math.atan2(_aiToTarget.x, _aiToTarget.z);
 
   let angleDiff = targetAngle - racer.rotY;
   while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
@@ -152,8 +159,8 @@ export function computeAIInput(
   // 5. Corner Anticipation & Throttle / Drift Control
   // Look slightly further ahead to detect sharp turns before entering them
   const curveAheadT = ((lookaheadT + 0.04) % 1.0 + 1.0) % 1.0;
-  const curveAheadTangent = track.curve.getTangentAt(curveAheadT).normalize();
-  const turnDot = targetTangent.dot(curveAheadTangent);
+  const curveAheadPoint = track.getCenterlinePointAt(curveAheadT);
+  const turnDot = targetTangent.dot(curveAheadPoint.tangent);
   const turnSharpness = Math.max(0, 1.0 - turnDot);
 
   let throttle = 1.0;

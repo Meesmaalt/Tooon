@@ -146,6 +146,8 @@ export interface RacerState {
   currentSurface?: string;
   surfaceName?: string;
   surfaceIcon?: string;
+  trackT?: number;
+  centerlineIndex?: number;
 }
 
 export interface RoomPlayer {

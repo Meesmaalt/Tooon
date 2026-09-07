@@ -155,7 +155,12 @@ export function updateRacerPhysics(
 
   // Accurate track centerline query using the continuous spline helper
   _physCarPos.set(racer.x, racer.y, racer.z);
-  const trackInfo = track.getTrackInfo(_physCarPos);
+  const trackInfo = track.getTrackInfo(_physCarPos, racer.centerlineIndex);
+  racer.centerlineIndex = trackInfo.closestIndex;
+  racer.trackT = trackInfo.t;
+  racer.currentSurface = trackInfo.surface || 'asphalt';
+  racer.surfaceName = trackInfo.surfaceName || 'Rannatee';
+  racer.surfaceIcon = trackInfo.surfaceIcon || '🛣️';
 
   // Height adherence
   const targetY = trackInfo.closestPoint.y;

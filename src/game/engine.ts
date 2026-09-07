@@ -36,6 +36,10 @@ export interface GameEngineCallbacks {
     currentSurface?: string;
     surfaceName?: string;
     surfaceIcon?: string;
+    minimapData?: {
+      curvePoints: { x: number; z: number }[];
+      racers: { id: string; x: number; z: number; color: string; isPlayer: boolean; position: number }[];
+    } | null;
   }) => void;
   onCombatEvent: (message: string) => void;
   onRaceFinished: (results: RacerState[]) => void;
@@ -72,8 +76,14 @@ export class ToonCarEngine {
   private cloudsGroup?: THREE.Group;
   private cameraShake: number = 0;
   private hudTimer: number = 0;
+  private physicsAccumulator: number = 0;
+  private readonly FIXED_DT: number = 1 / 60;
   private cachedMinimapPoints: { x: number; z: number }[] | null = null;
   private cachedMinimapRacers: { id: string; x: number; z: number; color: string; isPlayer: boolean; position: number }[] = [];
+  private cachedMinimapData: {
+    curvePoints: { x: number; z: number }[];
+    racers: { id: string; x: number; z: number; color: string; isPlayer: boolean; position: number }[];
+  } = { curvePoints: [], racers: [] };
 
   // Local player input
   public localInput: PlayerInput = {
@@ -128,11 +138,10 @@ export class ToonCarEngine {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    this.renderer.shadowMap.enabled = false;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.06;
+    this.renderer.toneMappingExposure = 1.08;
     container.appendChild(this.renderer.domElement);
 
     // 2. Systems
@@ -177,25 +186,15 @@ export class ToonCarEngine {
   }
 
   private setupLighting() {
-    const ambient = new THREE.AmbientLight(0xffffff, 0.7);
+    const ambient = new THREE.AmbientLight(0xffffff, 0.72);
     this.scene.add(ambient);
 
-    const sun = new THREE.DirectionalLight(0xfffaed, 1.2);
+    const sun = new THREE.DirectionalLight(0xfffaed, 1.25);
     sun.position.set(60, 100, 40);
-    sun.castShadow = true;
-    sun.shadow.mapSize.width = 2048;
-    sun.shadow.mapSize.height = 2048;
-    sun.shadow.camera.near = 10;
-    sun.shadow.camera.far = 400;
-    const d = 120;
-    sun.shadow.camera.left = -d;
-    sun.shadow.camera.right = d;
-    sun.shadow.camera.top = d;
-    sun.shadow.camera.bottom = -d;
     this.scene.add(sun);
 
     // Subtle blue hemisphere ground bounce
-    const hemi = new THREE.HemisphereLight(0xffffff, this.trackDef.groundColor, 0.5);
+    const hemi = new THREE.HemisphereLight(0xffffff, this.trackDef.groundColor, 0.52);
     this.scene.add(hemi);
 
     // Rim light for rich 3D body reflections and depth definition
@@ -216,7 +215,6 @@ export class ToonCarEngine {
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.position.y = -0.1;
-    ground.receiveShadow = true;
     this.scene.add(ground);
 
     // Add track parts
@@ -453,14 +451,14 @@ export class ToonCarEngine {
     this.animFrameId = requestAnimationFrame(this.loop);
 
     const now = performance.now();
-    let dt = (now - this.lastTime) / 1000;
+    let rawDt = (now - this.lastTime) / 1000;
     this.lastTime = now;
-    if (dt > 0.1) dt = 0.1; // Clamp big hitches
+    if (rawDt > 0.08) rawDt = 0.08; // Clamp lag spikes (e.g. background tab)
 
     // 1. Countdown handler
     if (this.gameState === 'countdown') {
       const prevTimer = this.countdownTimer;
-      this.countdownTimer -= dt;
+      this.countdownTimer -= rawDt;
 
       if (prevTimer >= 3.0 && this.countdownTimer < 3.0) {
         soundManager.playCountdown(false);
@@ -491,7 +489,24 @@ export class ToonCarEngine {
       }
     }
 
-    // 2. Process Racers
+    // 2. Deterministic Fixed Physics Sub-Stepping (eliminates micro-stutters)
+    this.physicsAccumulator += rawDt;
+    let steps = 0;
+    const maxSteps = 3;
+    while (this.physicsAccumulator >= this.FIXED_DT && steps < maxSteps) {
+      this.stepPhysics(this.FIXED_DT, now);
+      this.physicsAccumulator -= this.FIXED_DT;
+      steps++;
+    }
+    if (this.physicsAccumulator > this.FIXED_DT) {
+      this.physicsAccumulator = 0;
+    }
+
+    // 3. Visuals, particles, camera & rendering (runs per display refresh)
+    this.stepVisualsAndRender(rawDt, now);
+  };
+
+  private stepPhysics(dt: number, now: number) {
     const canDrive = this.gameState === 'racing';
 
     this.racers.forEach(racer => {
@@ -530,7 +545,7 @@ export class ToonCarEngine {
         }
       }
 
-      // Physics update
+      // Physics update (rock-solid with fixed timestep)
       updateRacerPhysics(racer, input, this.trackData, dt, (event) => this.handleCollision(event), this.speedFactor);
 
       // Sound update for local player
@@ -560,14 +575,20 @@ export class ToonCarEngine {
       }
     });
 
-    // 3. Resolve Bumping Collisions between cars
+    // Resolve Bumping Collisions between cars
     resolveCarCarCollisions(this.racers, dt, (event) => this.handleCollision(event));
 
-    // 4. Update Projectiles
+    // Update Projectiles
     updateProjectiles(this.projectiles, this.racers, dt, (event) => this.handleCollision(event));
+
+    // Calculate Race Standings (1st - 6th)
+    this.updateRacePositions();
+  }
+
+  private stepVisualsAndRender(dt: number, now: number) {
     this.syncProjectileMeshes();
 
-    // 5. Update Item Boxes Respawn & Idle Spin
+    // Update Item Boxes Respawn & Idle Spin
     this.trackData.itemBoxes.forEach(box => {
       box.mesh.rotation.y += dt * 2.5;
       box.mesh.position.y = box.y + Math.sin(now * 0.004) * 0.2;
@@ -594,20 +615,17 @@ export class ToonCarEngine {
       this.trackData.waterMesh.position.y = -0.4 + Math.sin(now * 0.0018) * 0.12;
     }
 
-    // 6. Update 3D Visual Meshes & Particles
+    // Update 3D Visual Meshes & Particles
     this.updateVisualMeshes(dt);
     this.particles.update(dt);
     this.skidMarks.update(dt);
 
-    // 7. Calculate Race Standings (1st - 6th)
-    this.updateRacePositions();
-
-    // 8. Dynamic Chase Camera
+    // Dynamic Chase Camera (smooth exponential interpolation)
     this.updateCamera(dt);
 
-    // 9. Notify React HUD (throttled to 20 FPS to prevent thread stalling)
+    // Notify React HUD (throttled to ~16 FPS to prevent thread stalling)
     this.hudTimer += dt;
-    if (this.hudTimer >= 0.05) {
+    if (this.hudTimer >= 0.06) {
       this.hudTimer = 0;
       const localRacer = this.racers.find(r => r.id === this.localPlayerId);
       if (localRacer) {
@@ -633,13 +651,14 @@ export class ToonCarEngine {
           currentSurface: localRacer.currentSurface,
           surfaceName: localRacer.surfaceName,
           surfaceIcon: localRacer.surfaceIcon,
+          minimapData: this.getMinimapData(),
         });
       }
     }
 
-    // 10. Render 3D Scene
+    // Render 3D Scene
     this.renderer.render(this.scene, this.camera);
-  };
+  }
 
   private handleCollision(event: CollisionEvent) {
     if (event.type === 'car_bump') {
@@ -966,9 +985,10 @@ export class ToonCarEngine {
     _targetCamPos.set(player.x, player.y + camHeight, player.z)
       .addScaledVector(_camDir, camDist);
 
-    // Completely rock-solid camera damping without any jitter or shaking
+    // Frame-rate independent exponential smoothing (completely jitter-free)
+    const camAlpha = 1.0 - Math.exp(-9.0 * dt);
     this.cameraShake = 0;
-    this.camera.position.lerp(_targetCamPos, Math.min(dt * 8.0, 0.35));
+    this.camera.position.lerp(_targetCamPos, camAlpha);
 
     const lookAheadDist = isLookingBack ? -8 : 5.0;
     _camLookTarget.set(player.x, player.y + 1.25, player.z).addScaledVector(_camFwd, lookAheadDist);
@@ -977,7 +997,7 @@ export class ToonCarEngine {
 
     // Dynamic FOV for speed sensation - smooth and comfortable without fish-eye dizziness
     const targetFOV = player.turboTimer > 0 ? 76 : (player.speed > 25 ? 70 : 64);
-    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFOV, dt * 5);
+    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFOV, 1.0 - Math.exp(-5.0 * dt));
     this.camera.updateProjectionMatrix();
   }
 
@@ -1018,7 +1038,9 @@ export class ToonCarEngine {
         mr.position = r.position;
       }
     }
-    return { curvePoints: this.cachedMinimapPoints, racers: this.cachedMinimapRacers };
+    this.cachedMinimapData.curvePoints = this.cachedMinimapPoints;
+    this.cachedMinimapData.racers = this.cachedMinimapRacers;
+    return this.cachedMinimapData;
   }
 
   public destroy() {

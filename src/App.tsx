@@ -258,8 +258,8 @@ export default function App() {
       {
         onHUDUpdate: (data) => {
           setHudData(data);
-          if (engineRef.current) {
-            setMinimapData(engineRef.current.getMinimapData());
+          if (data.minimapData) {
+            setMinimapData(data.minimapData);
           }
         },
         onCombatEvent: (msg) => {
