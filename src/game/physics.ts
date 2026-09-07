@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RacerState, PlayerInput, Projectile, CarDefinition } from '../types';
 import { TrackData } from './tracks';
 import { CAR_DEFINITIONS } from './cars';
+import { getRandomPowerUp } from './powerups';
 import { soundManager } from '../audio/soundManager';
 
 // Pre-allocated static scratch vectors for zero-allocation physics updates
@@ -319,11 +320,20 @@ export function updateRacerPhysics(
     for (const box of track.itemBoxes) {
       if (!box.active) continue;
       const boxDist = Math.hypot(racer.x - box.x, (racer.y - box.y) * 1.5, racer.z - box.z);
-      if (boxDist < 2.6) {
-        box.active = false;
-        box.respawnTime = 5; // Respawn after 5 seconds
-        box.mesh.visible = false;
-        racer.itemBoxCooldown = 2.5; // Cooldown prevents grabbing a second box in the same row!
+      if (boxDist < 2.4) {
+        // Deactivate this box + any neighbors in the same row (prevents double pickup)
+        for (const other of track.itemBoxes) {
+          if (!other.active) continue;
+          const near = Math.hypot(other.x - box.x, other.z - box.z);
+          if (near < 5.5) {
+            other.active = false;
+            other.respawnTime = 5;
+            other.mesh.visible = false;
+          }
+        }
+        racer.itemBoxCooldown = 3.5;
+        // Grant item atomically here so a second box in the same frame cannot trigger
+        racer.currentItem = getRandomPowerUp(racer.position, 6);
 
         if (onCollision) {
           onCollision({
@@ -334,7 +344,7 @@ export function updateRacerPhysics(
             z: box.z,
           });
         }
-        break; // Strictly 1 box per pass!
+        break;
       }
     }
   }

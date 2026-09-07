@@ -140,7 +140,7 @@ export class ToonCarEngine {
     const height = container.clientHeight || window.innerHeight;
     this.camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
     this.renderer.shadowMap.enabled = false;
@@ -658,11 +658,8 @@ export class ToonCarEngine {
       soundManager.playItemBox();
       this.particles.emitBoxBreak(event.x, event.y, event.z);
       const racer = this.racers.find(r => r.id === event.racerId);
-      if (racer && !racer.currentItem) {
-        racer.currentItem = getRandomPowerUp(racer.position, this.racers.length);
-        if (racer.id === this.localPlayerId) {
-          this.callbacks.onCombatEvent(`🎁 Said eseme: ${racer.currentItem.toUpperCase()}!`);
-        }
+      if (racer && racer.id === this.localPlayerId && racer.currentItem) {
+        this.callbacks.onCombatEvent(`🎁 Said: ${racer.currentItem.replace('_', ' ').toUpperCase()}!`);
       }
     } else if (event.type === 'rocket_hit') {
       soundManager.playExplosion();
@@ -673,7 +670,32 @@ export class ToonCarEngine {
       const attacker = this.racers.find(r => r.id === event.racerId);
       const target = this.racers.find(r => r.id === event.targetId);
       if (attacker && target) {
-        this.callbacks.onCombatEvent(`💥 ${attacker.name} tabas raketiga sõitjat ${target.name}!`);
+        this.callbacks.onCombatEvent(`💥 ${attacker.name} tabas raketiga ${target.name}!`);
+      }
+    } else if (event.type === 'blue_rocket_hit') {
+      soundManager.playExplosion();
+      this.particles.emitExplosion(event.x, event.y, event.z);
+      if (event.targetId === this.localPlayerId) this.cameraShake = 1.2;
+      const attacker = this.racers.find(r => r.id === event.racerId);
+      const target = this.racers.find(r => r.id === event.targetId);
+      if (attacker && target) {
+        this.callbacks.onCombatEvent(`🔷 ${attacker.name} SININE RAKETT tabas liidrit ${target.name}!`);
+      }
+    } else if (event.type === 'thundercloud_strike') {
+      soundManager.playExplosion();
+      this.particles.emitLightning(event.x, event.y, event.z);
+      if (event.targetId === this.localPlayerId) this.cameraShake = 1.1;
+      const target = this.racers.find(r => r.id === event.targetId);
+      if (target) {
+        this.callbacks.onCombatEvent(`⛈️ ÄIKESELOÖK tabas ${target.name}!`);
+      }
+    } else if (event.type === 'banana_hit') {
+      soundManager.playBoing();
+      this.particles.emitSparks(event.x, event.y + 0.2, event.z, 0xfacc15, 6);
+      if (event.targetId === this.localPlayerId) this.cameraShake = 0.5;
+      const target = this.racers.find(r => r.id === event.targetId);
+      if (target) {
+        this.callbacks.onCombatEvent(`🍌 ${target.name} libises banaanile!`);
       }
     } else if (event.type === 'mine_hit') {
       soundManager.playExplosion();
@@ -747,8 +769,23 @@ export class ToonCarEngine {
       }
     } else if (item === 'rocket') {
       soundManager.playRocketLaunch();
-      // Find target ahead
-      const target = this.racers.find(r => r.id !== racer.id && r.position < racer.position);
+      // Nearest opponent roughly ahead (better position = lower position number)
+      let target = this.racers
+        .filter(r => r.id !== racer.id && r.position < racer.position && !r.finished)
+        .sort((a, b) => {
+          const da = (a.x - racer.x) ** 2 + (a.z - racer.z) ** 2;
+          const db = (b.x - racer.x) ** 2 + (b.z - racer.z) ** 2;
+          return da - db;
+        })[0];
+      if (!target) {
+        target = this.racers
+          .filter(r => r.id !== racer.id && !r.finished)
+          .sort((a, b) => {
+            const da = (a.x - racer.x) ** 2 + (a.z - racer.z) ** 2;
+            const db = (b.x - racer.x) ** 2 + (b.z - racer.z) ** 2;
+            return da - db;
+          })[0];
+      }
 
       const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY)).normalize();
       const spawnPos = new THREE.Vector3(racer.x, racer.y + 0.6, racer.z).add(fwd.clone().multiplyScalar(2.5));
@@ -764,7 +801,7 @@ export class ToonCarEngine {
         vy: 0,
         vz: fwd.z * 55,
         targetId: target?.id,
-        life: 5.0,
+        life: 4.2,
         active: true,
       });
     } else if (item === 'trio_rockets') {
@@ -809,30 +846,115 @@ export class ToonCarEngine {
         life: 25.0,
         active: true,
       });
+    } else if (item === 'blue_rocket') {
+      soundManager.playRocketLaunch();
+      const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY)).normalize();
+      const spawnPos = new THREE.Vector3(racer.x, racer.y + 0.7, racer.z).add(fwd.clone().multiplyScalar(2.5));
+      this.projectiles.push({
+        id: `bluerocket_${Date.now()}_${Math.random()}`,
+        type: 'blue_rocket',
+        ownerId: racer.id,
+        x: spawnPos.x,
+        y: spawnPos.y,
+        z: spawnPos.z,
+        vx: fwd.x * 70,
+        vy: 0,
+        vz: fwd.z * 70,
+        life: 14.0,
+        active: true,
+      });
+      if (racer.id === this.localPlayerId) {
+        this.callbacks.onCombatEvent('🔷 SININE RAKETT teel liidri poole!');
+      }
+    } else if (item === 'thundercloud') {
+      soundManager.playRocketLaunch();
+      const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY)).normalize();
+      // Drop slightly behind so it sits on the track as a trap
+      const spawnPos = new THREE.Vector3(racer.x, racer.y + 2.0, racer.z).sub(fwd.clone().multiplyScalar(1.2));
+      this.projectiles.push({
+        id: `thunder_${Date.now()}_${Math.random()}`,
+        type: 'thundercloud',
+        ownerId: racer.id,
+        x: spawnPos.x,
+        y: spawnPos.y,
+        z: spawnPos.z,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        life: 60.0,
+        active: true,
+        state: 'idle',
+        timer: 3.5,
+      });
+      if (racer.id === this.localPlayerId) {
+        this.callbacks.onCombatEvent('⛈️ ÄIKESEPILV ootab ohvreid!');
+      }
+    } else if (item === 'banana') {
+      const fwd = new THREE.Vector3(Math.sin(racer.rotY), 0, Math.cos(racer.rotY)).normalize();
+      const spawnPos = new THREE.Vector3(racer.x, racer.y + 0.25, racer.z).sub(fwd.clone().multiplyScalar(2.5));
+      this.projectiles.push({
+        id: `banana_${Date.now()}_${Math.random()}`,
+        type: 'banana',
+        ownerId: racer.id,
+        x: spawnPos.x,
+        y: spawnPos.y,
+        z: spawnPos.z,
+        vx: 0,
+        vy: 0,
+        vz: 0,
+        life: 30.0,
+        active: true,
+      });
+      if (racer.id === this.localPlayerId) {
+        this.callbacks.onCombatEvent('🍌 Banaan teele!');
+      }
+    } else if (item === 'star') {
+      racer.starTimer = 7.0;
+      racer.turboTimer = Math.max(racer.turboTimer, 7.0);
+      racer.hasShield = true;
+      racer.shieldTimer = 7.0;
+      soundManager.playTurbo();
+      if (racer.id === this.localPlayerId) {
+        this.callbacks.onCombatEvent('⭐ SUPER TÄHT! Võitmatu!');
+      }
     }
   }
 
   private syncProjectileMeshes() {
-    // Add new meshes
     this.projectiles.forEach(p => {
       if (p.active && !this.projectileMeshes.has(p.id)) {
-        const mesh = p.type === 'rocket' ? createRocketMesh() : createMineMesh();
+        let mesh: THREE.Group;
+        switch (p.type) {
+          case 'blue_rocket': mesh = createBlueRocketMesh(); break;
+          case 'thundercloud': mesh = createThundercloudMesh(); break;
+          case 'banana': mesh = createBananaMesh(); break;
+          case 'mine': mesh = createMineMesh(); break;
+          default: mesh = createRocketMesh(); break;
+        }
         mesh.position.set(p.x, p.y, p.z);
         this.scene.add(mesh);
         this.projectileMeshes.set(p.id, mesh);
       }
     });
 
-    // Update positions and remove dead
     this.projectileMeshes.forEach((mesh, id) => {
       const p = this.projectiles.find(x => x.id === id);
       if (p && p.active) {
         mesh.position.set(p.x, p.y, p.z);
-        if (p.type === 'rocket') {
-          const angle = Math.atan2(p.vx, p.vz);
-          mesh.rotation.y = angle;
+        if (p.type === 'rocket' || p.type === 'blue_rocket') {
+          mesh.rotation.y = Math.atan2(p.vx, p.vz);
+        } else if (p.type === 'thundercloud') {
+          mesh.rotation.y += 0.03;
+          // Bob while idle
+          if (p.state === 'idle') {
+            mesh.position.y = p.y + Math.sin(performance.now() * 0.004) * 0.25;
+          }
+          // Cloud sparks while chasing
+          if (p.state === 'chasing' && Math.random() < 0.25) {
+            this.particles.emitCloudSparks(p.x, p.y, p.z);
+          }
         } else {
-          mesh.rotation.y += 0.05;
+          mesh.rotation.y += 0.04;
         }
       } else {
         this.scene.remove(mesh);
@@ -847,7 +969,7 @@ export class ToonCarEngine {
 
   private updateVisualMeshes(dt: number) {
     this.fxThrottle += dt;
-    const doFx = this.fxThrottle >= 0.04; // ~25 Hz particle FX max
+    const doFx = this.fxThrottle >= 0.05; // ~25 Hz particle FX max
     if (doFx) this.fxThrottle = 0;
 
     this.racers.forEach(racer => {
@@ -940,6 +1062,11 @@ export class ToonCarEngine {
         this.particles.emitExhaustSmoke(exPosX, exPosY, exPosZ, racer.rotY);
       }
 
+      // Super star aura (throttled)
+      if (doFx && racer.starTimer > 0) {
+        this.particles.emitStarAura(racer.x, racer.y + 0.5, racer.z);
+      }
+
       // Shield mesh visibility
       const shield = this.shieldMeshes.get(racer.id);
       if (shield) {
@@ -989,9 +1116,8 @@ export class ToonCarEngine {
       this.currentCamLookTarget.copy(_camLookTarget);
       this.isFirstCamFrame = false;
     } else {
-      // Synchronized exponential smoothing for both camera position and look target
-      // This guarantees the camera's pitch angle never oscillates relative to the car!
-      const camAlpha = Math.min(1.0, 1.0 - Math.exp(-12.0 * dt));
+      // Softer follow — high alpha caused visible car/camera jerk on uneven frame times
+      const camAlpha = Math.min(1.0, 1.0 - Math.exp(-7.5 * dt));
       this.camera.position.lerp(_targetCamPos, camAlpha);
       this.currentCamLookTarget.lerp(_camLookTarget, camAlpha);
     }
@@ -999,10 +1125,13 @@ export class ToonCarEngine {
     this.camera.up.set(0, 1, 0);
     this.camera.lookAt(this.currentCamLookTarget);
 
-    // Dynamic FOV for speed sensation - smooth and comfortable without fish-eye dizziness
-    const targetFOV = player.turboTimer > 0 ? 76 : (player.speed > 25 ? 70 : 64);
-    this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFOV, Math.min(1.0, dt * 4.0));
-    this.camera.updateProjectionMatrix();
+    // FOV changes rarely — avoid updateProjectionMatrix every frame (GPU/CPU stutter source)
+    const targetFOV = player.turboTimer > 0 ? 74 : (player.speed > 25 ? 68 : 64);
+    const nextFov = THREE.MathUtils.lerp(this.camera.fov, targetFOV, Math.min(1.0, dt * 2.5));
+    if (Math.abs(nextFov - this.camera.fov) > 0.08) {
+      this.camera.fov = nextFov;
+      this.camera.updateProjectionMatrix();
+    }
   }
 
   private onWindowResize = () => {

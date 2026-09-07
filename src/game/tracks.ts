@@ -1421,7 +1421,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const sectors = getTrackSectors(trackDef.theme);
 
   // Build dense centerline (720 points along spline) for accurate physics on long multi-level tracks
-  const denseCount = 360;
+  const denseCount = 300;
   const centerlinePoints: CenterlinePoint[] = [];
   const upVec = new THREE.Vector3(0, 1, 0);
 
@@ -1605,7 +1605,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   };
 
   // 1. Generate Road Ribbon Geometry with multi-surface materials
-  const segments = 220;
+  const segments = 180;
   const roadGeo = new THREE.BufferGeometry();
   const roadVertices: number[] = [];
   const roadUvs: number[] = [];
