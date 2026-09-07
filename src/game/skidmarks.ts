@@ -21,7 +21,7 @@ interface FastSkidStrip {
 export class SkidMarkManager {
   private scene: THREE.Scene;
   private strips: Map<string, FastSkidStrip> = new Map();
-  private maxPoints = 50;
+  private maxPoints = 28;
   private sharedMat: THREE.MeshBasicMaterial;
 
   constructor(scene: THREE.Scene) {

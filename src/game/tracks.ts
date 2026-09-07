@@ -1112,7 +1112,7 @@ function createTunnel(
   }
 
   const upVec = new THREE.Vector3(0, 1, 0);
-  const steps = 36;
+  const steps = 18;
   const tunnelWidth = trackWidth + 4.5;
   const tunnelHeight = 8.8;
 
@@ -1316,7 +1316,7 @@ function createCliffs(
   ];
 
   cliffRanges.forEach(cr => {
-    const numSections = 20;
+    const numSections = 10;
     const positions: number[] = [];
     const indices: number[] = [];
 
@@ -1421,7 +1421,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const sectors = getTrackSectors(trackDef.theme);
 
   // Build dense centerline (720 points along spline) for accurate physics on long multi-level tracks
-  const denseCount = 720;
+  const denseCount = 360;
   const centerlinePoints: CenterlinePoint[] = [];
   const upVec = new THREE.Vector3(0, 1, 0);
 
@@ -1605,7 +1605,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   };
 
   // 1. Generate Road Ribbon Geometry with multi-surface materials
-  const segments = 460;
+  const segments = 220;
   const roadGeo = new THREE.BufferGeometry();
   const roadVertices: number[] = [];
   const roadUvs: number[] = [];

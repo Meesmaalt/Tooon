@@ -29,7 +29,9 @@ export function updateRacerPhysics(
   onCollision?: (event: CollisionEvent) => void,
   speedFactor: number = 1.0
 ) {
-  const carDef = CAR_DEFINITIONS.find(c => c.id === racer.carId) || CAR_DEFINITIONS[0];
+  // Prefer cached def on racer if present (avoids Array.find every frame)
+  const carDef = (racer as any)._carDef || CAR_DEFINITIONS.find(c => c.id === racer.carId) || CAR_DEFINITIONS[0];
+  (racer as any)._carDef = carDef;
   const isIceTrack = track.theme === 'ice';
   
   // Tuned for polished, realistic arcade racing: satisfying sense of speed, full control, and zero twitchiness

@@ -166,7 +166,7 @@ export class ParticleSystem {
    * Spawns exhaust smoke puff
    */
   public emitExhaustSmoke(x: number, y: number, z: number, carRotY: number) {
-    if (this.activeParticles.length > 200) return;
+    if (this.activeParticles.length > 120) return;
     const mesh = this.acquireMesh(this.smokeGeo, this.smokeMat);
     mesh.position.set(
       x + (Math.random() - 0.5) * 0.1,
@@ -195,7 +195,7 @@ export class ParticleSystem {
    * Spawns nitro boost flame jet
    */
   public emitNitroFlame(x: number, y: number, z: number, carRotY: number) {
-    if (this.activeParticles.length > 200) return;
+    if (this.activeParticles.length > 120) return;
     const isCyan = Math.random() > 0.35;
     const mat = isCyan ? this.flameCyanMat : this.flameOrangeMat;
     const mesh = this.acquireMesh(this.flameGeo, mat);
@@ -223,8 +223,8 @@ export class ParticleSystem {
    * Spawns drift sparks (yellow, orange, blue, or purple based on tier)
    */
   public emitDriftSparks(x: number, y: number, z: number, level: 1 | 2 | 3) {
-    if (this.activeParticles.length > 200) return;
-    const count = 2;
+    if (this.activeParticles.length > 120) return;
+    const count = 1;
     for (let i = 0; i < count; i++) {
       const mat =
         level === 3
@@ -438,7 +438,7 @@ export class ParticleSystem {
    * Spawns ominous rain/electric sparks under active thundercloud
    */
   public emitCloudSparks(x: number, y: number, z: number) {
-    if (this.activeParticles.length > 220) return;
+    if (this.activeParticles.length > 120) return;
     const mat = Math.random() > 0.5 ? this.sparkPurpleMat : this.flameCyanMat;
     const mesh = this.acquireMesh(this.sparkGeo, mat);
     mesh.position.set(
@@ -465,7 +465,7 @@ export class ParticleSystem {
    * Spawns rainbow sparkle trail for Super Star invincibility
    */
   public emitStarAura(x: number, y: number, z: number) {
-    if (this.activeParticles.length > 220) return;
+    if (this.activeParticles.length > 120) return;
     const mat = this.starMats[Math.floor(Math.random() * this.starMats.length)];
     const mesh = this.acquireMesh(this.starGeo, mat);
     mesh.position.set(

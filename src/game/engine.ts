@@ -75,6 +75,10 @@ export class ToonCarEngine {
   private skidMarks: SkidMarkManager;
   private cloudsGroup?: THREE.Group;
   private cameraShake: number = 0;
+  private fxThrottle: number = 0;
+  private posUpdateTimer: number = 0;
+  private _blankInput: PlayerInput = { throttle: 0, brake: 0, steer: 0, drift: false, useItem: false, honk: false, lookBehind: false, respawn: false };
+  private _aiScratchInput: PlayerInput = { throttle: 0, brake: 0, steer: 0, drift: false, useItem: false, honk: false, lookBehind: false, respawn: false };
   private hudTimer: number = 0;
   private currentCamLookTarget: THREE.Vector3 = new THREE.Vector3();
   private isFirstCamFrame: boolean = true;
@@ -138,7 +142,7 @@ export class ToonCarEngine {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
     this.renderer.shadowMap.enabled = false;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
@@ -494,14 +498,7 @@ export class ToonCarEngine {
     const canDrive = this.gameState === 'racing';
 
     this.racers.forEach(racer => {
-      let input: PlayerInput = {
-        throttle: 0,
-        brake: 0,
-        steer: 0,
-        drift: false,
-        useItem: false,
-        honk: false,
-      };
+      let input: PlayerInput = this._blankInput;
 
       if (canDrive && !racer.finished) {
         if (racer.id === this.localPlayerId) {
@@ -565,8 +562,12 @@ export class ToonCarEngine {
     // Update Projectiles
     updateProjectiles(this.projectiles, this.racers, dt, (event) => this.handleCollision(event));
 
-    // Calculate Race Standings (1st - 6th)
-    this.updateRacePositions();
+    // Calculate Race Standings (throttled — 6 cars, no need every frame)
+    this.posUpdateTimer += dt;
+    if (this.posUpdateTimer >= 0.12) {
+      this.posUpdateTimer = 0;
+      this.updateRacePositions();
+    }
 
     // 3. Visual meshes, particles, camera & rendering
     this.syncProjectileMeshes();
@@ -608,7 +609,7 @@ export class ToonCarEngine {
 
     // Notify React HUD (throttled to ~16 FPS to prevent thread stalling)
     this.hudTimer += dt;
-    if (this.hudTimer >= 0.06) {
+    if (this.hudTimer >= 0.1) {
       this.hudTimer = 0;
       const localRacer = this.racers.find(r => r.id === this.localPlayerId);
       if (localRacer) {
@@ -845,6 +846,10 @@ export class ToonCarEngine {
   }
 
   private updateVisualMeshes(dt: number) {
+    this.fxThrottle += dt;
+    const doFx = this.fxThrottle >= 0.04; // ~25 Hz particle FX max
+    if (doFx) this.fxThrottle = 0;
+
     this.racers.forEach(racer => {
       const meshContainer = this.carMeshes.get(racer.id);
       if (!meshContainer) return;
@@ -889,37 +894,45 @@ export class ToonCarEngine {
         meshContainer.tailLightMat.emissiveIntensity = isBraking ? 2.8 : 0.8;
       }
 
-      // Skidmarks & Drift sparks
+      // Skidmarks & Drift sparks (throttled FX — main stutter source when every car drifts)
       if (racer.isDrifting) {
-        this.skidMarks.addSkid(racer.id, racer.x, racer.y, racer.z, racer.rotY);
-        const sparkLevel: 1 | 2 | 3 = (racer.driftChargeTime || 0) >= 2.6 ? 3 : ((racer.driftChargeTime || 0) >= 1.6 ? 2 : 1);
-        _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
-        _visRight.set(_visFwd.z, 0, -_visFwd.x);
+        // Skid geometry only for local player every frame; AI every other FX tick
+        if (!racer.isAI || doFx) {
+          this.skidMarks.addSkid(racer.id, racer.x, racer.y, racer.z, racer.rotY);
+        }
+        if (doFx) {
+          const sparkLevel: 1 | 2 | 3 = (racer.driftChargeTime || 0) >= 2.6 ? 3 : ((racer.driftChargeTime || 0) >= 1.6 ? 2 : 1);
+          _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
+          _visRight.set(_visFwd.z, 0, -_visFwd.x);
 
-        const rLx = racer.x + _visFwd.x * -0.8 + _visRight.x * -0.75;
-        const rLz = racer.z + _visFwd.z * -0.8 + _visRight.z * -0.75;
-        const rRx = racer.x + _visFwd.x * -0.8 + _visRight.x * 0.75;
-        const rRz = racer.z + _visFwd.z * -0.8 + _visRight.z * 0.75;
-
-        this.particles.emitDriftSparks(rLx, racer.y, rLz, sparkLevel);
-        this.particles.emitDriftSparks(rRx, racer.y, rRz, sparkLevel);
+          const rLx = racer.x + _visFwd.x * -0.8 + _visRight.x * -0.75;
+          const rLz = racer.z + _visFwd.z * -0.8 + _visRight.z * -0.75;
+          // One side only — half the particles, still reads as drift
+          this.particles.emitDriftSparks(rLx, racer.y, rLz, sparkLevel);
+          if (!racer.isAI) {
+            const rRx = racer.x + _visFwd.x * -0.8 + _visRight.x * 0.75;
+            const rRz = racer.z + _visFwd.z * -0.8 + _visRight.z * 0.75;
+            this.particles.emitDriftSparks(rRx, racer.y, rRz, sparkLevel);
+          }
+        }
       } else {
         this.skidMarks.stopSkid(racer.id);
       }
 
-      // Nitro flames
-      if (racer.turboTimer > 0) {
+      // Nitro flames / exhaust (throttled)
+      if (doFx && racer.turboTimer > 0) {
         _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
         _visRight.set(_visFwd.z, 0, -_visFwd.x);
         const exY = racer.y + 0.45;
         const exLx = racer.x + _visFwd.x * -1.4 + _visRight.x * -0.45;
         const exLz = racer.z + _visFwd.z * -1.4 + _visRight.z * -0.45;
-        const exRx = racer.x + _visFwd.x * -1.4 + _visRight.x * 0.45;
-        const exRz = racer.z + _visFwd.z * -1.4 + _visRight.z * 0.45;
-
         this.particles.emitNitroFlame(exLx, exY, exLz, racer.rotY);
-        this.particles.emitNitroFlame(exRx, exY, exRz, racer.rotY);
-      } else if (Math.abs(racer.speed) > 12 && Math.random() < 0.22) {
+        if (!racer.isAI) {
+          const exRx = racer.x + _visFwd.x * -1.4 + _visRight.x * 0.45;
+          const exRz = racer.z + _visFwd.z * -1.4 + _visRight.z * 0.45;
+          this.particles.emitNitroFlame(exRx, exY, exRz, racer.rotY);
+        }
+      } else if (doFx && !racer.isAI && Math.abs(racer.speed) > 12 && Math.random() < 0.12) {
         _visFwd.set(Math.sin(racer.rotY), 0, Math.cos(racer.rotY));
         const exPosX = racer.x + _visFwd.x * -1.4;
         const exPosY = racer.y + 0.35;
