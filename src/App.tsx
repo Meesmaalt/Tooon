@@ -62,6 +62,7 @@ export default function App() {
     surfaceIcon: '🛣️',
   });
   const [combatEvents, setCombatEvents] = useState<string[]>([]);
+  const [paused, setPaused] = useState(false);
   const [countdownText, setCountdownText] = useState<string | number>('');
   const [minimapData, setMinimapData] = useState<any>(null);
   const [raceResults, setRaceResults] = useState<RacerState[]>([]);
@@ -193,8 +194,8 @@ export default function App() {
         e.preventDefault();
       }
 
-      // Discrete triggers: Item, Honk, Respawn
-      if (['e', 'keye', 'enter'].includes(keyLow) || ['e', 'keye', 'enter'].includes(codeLow)) {
+      // Discrete triggers: Item, Honk, Respawn (ignore key repeat — no auto-fire while held)
+      if (!e.repeat && (['e', 'keye', 'enter'].includes(keyLow) || ['e', 'keye', 'enter'].includes(codeLow))) {
         engine.localInput.useItem = true;
       }
       if (['h', 'keyh'].includes(keyLow) || ['h', 'keyh'].includes(codeLow)) {
@@ -202,6 +203,15 @@ export default function App() {
       }
       if (['r', 'keyr'].includes(keyLow) || ['r', 'keyr'].includes(codeLow)) {
         engine.localInput.respawn = true;
+      }
+
+      // Pause / unpause race
+      if (!e.repeat && (keyLow === 'escape' || codeLow === 'escape')) {
+        e.preventDefault();
+        if (engine.gameState === 'racing' || engine.gameState === 'countdown') {
+          engine.paused = !engine.paused;
+          setPaused(engine.paused);
+        }
       }
 
       updateEngineInputs();
@@ -306,6 +316,7 @@ export default function App() {
     );
 
     engineRef.current = engine;
+    setPaused(false);
 
     return () => {
       if (engineRef.current) {
@@ -422,6 +433,41 @@ export default function App() {
       />
 
       {/* In-Game HUD overlay */}
+      {screen === 'racing' && paused && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm pointer-events-auto">
+          <div className="bg-slate-900 border-4 border-amber-400 rounded-3xl px-10 py-8 text-center shadow-2xl max-w-sm">
+            <div className="text-5xl mb-3">⏸️</div>
+            <h2 className="text-3xl font-black text-amber-300 mb-2">PAUSITUD</h2>
+            <p className="text-slate-300 text-sm mb-6">Vajuta <kbd className="px-2 py-0.5 bg-slate-800 rounded border border-slate-600">Esc</kbd> et jätkata</p>
+            <button
+              type="button"
+              className="px-6 py-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black"
+              onClick={() => {
+                if (engineRef.current) engineRef.current.paused = false;
+                setPaused(false);
+              }}
+            >
+              Jätka
+            </button>
+            <button
+              type="button"
+              className="block w-full mt-3 px-6 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold"
+              onClick={() => {
+                if (engineRef.current) {
+                  engineRef.current.paused = false;
+                  engineRef.current.destroy();
+                  engineRef.current = null;
+                }
+                setPaused(false);
+                setScreen('menu');
+              }}
+            >
+              Tagasi menüüsse
+            </button>
+          </div>
+        </div>
+      )}
+
       {screen === 'racing' && (
         <HUD
           speed={hudData.speed}
@@ -433,6 +479,10 @@ export default function App() {
           isDrifting={hudData.isDrifting}
           hasTurbo={hudData.hasTurbo}
           hasShield={hudData.hasShield}
+          inSlipstream={hudData.inSlipstream}
+          isFinalLap={hudData.isFinalLap}
+          isLeader={hudData.isLeader}
+          blueThreat={hudData.blueThreat}
           isWrongWay={hudData.isWrongWay}
           currentLapTime={hudData.currentLapTime}
           bestLapTime={hudData.bestLapTime}
@@ -653,7 +703,7 @@ export default function App() {
               <span>Toon Car Racing 3D • Port 3001 (Väline) / 3000 (Konteiner) • WebGL & WebSocket Ready</span>
             </div>
             <div>
-              <span>Kasuta WASD või nooleklahve • Space: Drift • E: Ese</span>
+              <span>WASD / nooled • Space: Drift • E: Ese • Esc: Paus</span>
             </div>
           </div>
         </div>

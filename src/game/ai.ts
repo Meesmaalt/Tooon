@@ -179,61 +179,64 @@ export function computeAIInput(
   const isSharpTurn = (turnSharpness > 0.06 || Math.abs(angleDiff) > 0.32) && racer.speed > 16;
   const drift = isSharpTurn && (aiCtrl.aggression > 0.4 || Math.random() < 0.75);
 
-  // 6. Intelligent Item Usage
+  // 6. Intelligent Item Usage — hold briefly so player can see what AI got
   let useItem = false;
   if (racer.currentItem && aiCtrl.itemCooldown <= 0) {
     const item = racer.currentItem;
 
     if (item === 'turbo') {
-      // Use turbo on straights
       if (Math.abs(angleDiff) < 0.25) {
         useItem = true;
         aiCtrl.itemCooldown = 2.0;
       }
-    } else if (item === 'rocket' || item === 'trio_rockets') {
-      // Fire if a rival is in forward target cone
+    } else if (item === 'rocket' || item === 'trio_rockets' || item === 'blue_rocket') {
       const rivalAhead = allRacers.find(other => {
         if (other.id === racer.id) return false;
         const dx = other.x - racer.x;
         const dz = other.z - racer.z;
         const dist = Math.hypot(dx, dz);
-        if (dist > 6 && dist < 55) {
+        if (dist > 6 && dist < (item === 'blue_rocket' ? 120 : 55)) {
           const angleToRival = Math.atan2(dx, dz);
           let diff = Math.abs(angleToRival - racer.rotY);
           while (diff > Math.PI) diff = Math.PI * 2 - diff;
-          return diff < 0.55;
+          return diff < (item === 'blue_rocket' ? 1.2 : 0.55);
         }
         return false;
       });
-
-      if (rivalAhead) {
+      // Blue rocket: also fire if not in 1st place
+      if (rivalAhead || (item === 'blue_rocket' && racer.position > 1)) {
         useItem = true;
         aiCtrl.itemCooldown = 3.0;
-        if (Math.random() < 0.5) {
-          racer.speechText = "Võta see! 🚀";
-          racer.speechTimer = 2.0;
-        }
-      }
-    } else if (item === 'mine') {
-      // Drop if someone is trailing close behind
-      const rivalBehind = allRacers.find(other => {
-        if (other.id === racer.id) return false;
-        const dist = Math.hypot(other.x - racer.x, other.z - racer.z);
-        return dist < 18;
-      });
-
-      if (rivalBehind || Math.random() < 0.35) {
-        useItem = true;
-        aiCtrl.itemCooldown = 2.5;
-        racer.speechText = "Vaata ette! 💣";
+        racer.speechText = item === 'blue_rocket' ? "Sinine rakett! 🔷" : "Võta see! 🚀";
         racer.speechTimer = 2.0;
       }
-    } else if (item === 'shield') {
+    } else if (item === 'thundercloud') {
+      // Drop trap on track when someone is nearby or randomly when mid-pack
+      if (racer.position >= 2 || Math.random() < 0.4) {
+        useItem = true;
+        aiCtrl.itemCooldown = 3.5;
+        racer.speechText = "Äike tuleb! ⛈️";
+        racer.speechTimer = 2.0;
+      }
+    } else if (item === 'banana' || item === 'mine') {
+      const rivalBehind = allRacers.find(other => {
+        if (other.id === racer.id) return false;
+        return Math.hypot(other.x - racer.x, other.z - racer.z) < 20;
+      });
+      if (rivalBehind || Math.random() < 0.3) {
+        useItem = true;
+        aiCtrl.itemCooldown = 2.5;
+        racer.speechText = item === 'banana' ? "Banaan! 🍌" : "Vaata ette! 💣";
+        racer.speechTimer = 2.0;
+      }
+    } else if (item === 'shield' || item === 'star' || item === 'repair') {
       useItem = true;
-      aiCtrl.itemCooldown = 4.0;
+      aiCtrl.itemCooldown = 3.5;
     } else if (item === 'lightning' || item === 'anvil') {
-      useItem = true;
-      aiCtrl.itemCooldown = 4.0;
+      if (racer.position > 1) {
+        useItem = true;
+        aiCtrl.itemCooldown = 4.0;
+      }
     }
   }
 

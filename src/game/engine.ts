@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { RacerState, PlayerInput, Projectile, PowerUpType, TrackDefinition, CarDefinition, CarCustomization, SpeedClass } from '../types';
 import { buildTrack, TrackData } from './tracks';
 import { createToonCarMesh, CarMeshContainer, CAR_DEFINITIONS } from './cars';
-import { updateRacerPhysics, resolveCarCarCollisions, updateProjectiles, CollisionEvent } from './physics';
+import { updateRacerPhysics, resolveCarCarCollisions, updateProjectiles, applySlipstream, CollisionEvent } from './physics';
 import { createAIControllers, computeAIInput, AIOpponentController } from './ai';
 import { getRandomPowerUp, POWER_UPS, createRocketMesh, createBlueRocketMesh, createThundercloudMesh, createBananaMesh, createMineMesh, createShieldMesh } from './powerups';
 import { soundManager } from '../audio/soundManager';
@@ -29,6 +29,10 @@ export interface GameEngineCallbacks {
     isDrifting: boolean;
     hasTurbo: boolean;
     hasShield: boolean;
+    inSlipstream?: boolean;
+    isFinalLap?: boolean;
+    isLeader?: boolean;
+    blueThreat?: boolean;
     isWrongWay: boolean;
     currentLapTime: number;
     bestLapTime: number | null;
@@ -76,6 +80,8 @@ export class ToonCarEngine {
   private cloudsGroup?: THREE.Group;
   private cameraShake: number = 0;
   private fxThrottle: number = 0;
+  /** Blocks item use briefly after pickup so Space/E hold won't instant-fire */
+  private itemArmTimers: Map<string, number> = new Map();
   private posUpdateTimer: number = 0;
   private _blankInput: PlayerInput = { throttle: 0, brake: 0, steer: 0, drift: false, useItem: false, honk: false, lookBehind: false, respawn: false };
   private _aiScratchInput: PlayerInput = { throttle: 0, brake: 0, steer: 0, drift: false, useItem: false, honk: false, lookBehind: false, respawn: false };
@@ -106,6 +112,14 @@ export class ToonCarEngine {
   private countdownTimer: number = 3.2;
   public userCustomization?: CarCustomization;
   public speedFactor: number = 1.0;
+  public paused: boolean = false;
+  private lastAnnouncedPosition: number = 0;
+  private positionAnnounceCooldown: number = 0;
+  private finalLapAnnounced: boolean = false;
+  private nearMissCooldown: number = 0;
+  private blueWarningCooldown: number = 0;
+  private hitStreak: number = 0;
+  private hitStreakTimer: number = 0;
 
   constructor(
     container: HTMLElement,
@@ -140,13 +154,16 @@ export class ToonCarEngine {
     const height = container.clientHeight || window.innerHeight;
     this.camera = new THREE.PerspectiveCamera(65, width / height, 0.1, 1000);
 
-    this.renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
     this.renderer.shadowMap.enabled = false;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.08;
     container.appendChild(this.renderer.domElement);
+    this.renderer.sortObjects = true;
+    // Cheaper auto-clear path
+    this.renderer.autoClear = true;
 
     // 2. Systems
     this.particles = new ParticleSystem(this.scene);
@@ -460,6 +477,12 @@ export class ToonCarEngine {
     if (dt > 0.045) dt = 0.045; // Clamp lag spikes
     if (dt < 0.001) dt = 0.001;
 
+    // Pause: freeze sim, keep rendering last frame state
+    if (this.paused && this.gameState === 'racing') {
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+
     // 1. Countdown handler
     if (this.gameState === 'countdown') {
       const prevTimer = this.countdownTimer;
@@ -497,6 +520,13 @@ export class ToonCarEngine {
     // 2. Physics & Racer simulation (1:1 lockstep with display refresh)
     const canDrive = this.gameState === 'racing';
 
+    // Count down item-arm locks
+    this.itemArmTimers.forEach((t, id) => {
+      const next = t - dt;
+      if (next <= 0) this.itemArmTimers.delete(id);
+      else this.itemArmTimers.set(id, next);
+    });
+
     this.racers.forEach(racer => {
       let input: PlayerInput = this._blankInput;
 
@@ -504,9 +534,12 @@ export class ToonCarEngine {
         if (racer.id === this.localPlayerId) {
           input = this.localInput;
 
-          // Check if player used item
+          // Check if player used item (must be armed after pickup — no instant fire)
           if (this.localInput.useItem && racer.currentItem) {
-            this.firePowerUp(racer);
+            const arm = this.itemArmTimers.get(racer.id) || 0;
+            if (arm <= 0) {
+              this.firePowerUp(racer);
+            }
             this.localInput.useItem = false;
           }
 
@@ -543,7 +576,23 @@ export class ToonCarEngine {
         racer.finishTime = Date.now();
         if (racer.id === this.localPlayerId) {
           soundManager.playWinFanfare();
-          this.callbacks.onCombatEvent('🏁 SÕIT LÕPETATUD! Vaata tulemusi!');
+          this.callbacks.onCombatEvent(
+            racer.position === 1
+              ? '🏆 VÕIT!!! Oled legendaarne!'
+              : `🏁 Finiš! Koht #${racer.position}`
+          );
+          // Firework burst at finish
+          for (let f = 0; f < 5; f++) {
+            setTimeout(() => {
+              this.particles.emitExplosion(
+                racer.x + (Math.random() - 0.5) * 8,
+                racer.y + 2 + Math.random() * 4,
+                racer.z + (Math.random() - 0.5) * 8
+              );
+              this.particles.emitBoxBreak(racer.x, racer.y + 1, racer.z);
+            }, f * 180);
+          }
+          this.cameraShake = 0.8;
         }
 
         // Check if all finished
@@ -559,6 +608,57 @@ export class ToonCarEngine {
     // Resolve Bumping Collisions between cars
     resolveCarCarCollisions(this.racers, dt, (event) => this.handleCollision(event));
 
+    // Draft / slipstream boost
+    if (canDrive) applySlipstream(this.racers, dt);
+
+    // --- HYPE: final lap, near-miss, blue rocket warning ---
+    this.nearMissCooldown = Math.max(0, this.nearMissCooldown - dt);
+    this.blueWarningCooldown = Math.max(0, this.blueWarningCooldown - dt);
+    this.hitStreakTimer = Math.max(0, this.hitStreakTimer - dt);
+    if (this.hitStreakTimer <= 0) this.hitStreak = 0;
+
+    const localPlayer = this.racers.find(r => r.id === this.localPlayerId);
+    if (localPlayer && canDrive) {
+      // FINAL LAP banner
+      if (!this.finalLapAnnounced && localPlayer.lap === this.totalLaps && !localPlayer.finished) {
+        this.finalLapAnnounced = true;
+        soundManager.playCountdown(true);
+        this.callbacks.onCombatEvent('🏁 VIIMANE RING!!!');
+        this.callbacks.onCountdownTick('VIIMANE RING!');
+        setTimeout(() => this.callbacks.onCountdownTick(''), 2200);
+      }
+
+      // Near-miss when blasting past a rival very close at speed
+      if (this.nearMissCooldown <= 0 && localPlayer.speed > 18) {
+        for (const other of this.racers) {
+          if (other.id === localPlayer.id) continue;
+          const d = Math.hypot(other.x - localPlayer.x, other.z - localPlayer.z);
+          if (d > 2.2 && d < 4.2) {
+            const rel = localPlayer.speed - other.speed;
+            if (rel > 6) {
+              this.nearMissCooldown = 3.5;
+              this.callbacks.onCombatEvent('🔥 LÄHEDALT MÖÖDA!');
+              this.cameraShake = Math.max(this.cameraShake, 0.25);
+              break;
+            }
+          }
+        }
+      }
+
+      // Blue rocket inbound warning
+      if (this.blueWarningCooldown <= 0) {
+        const threat = this.projectiles.find(
+          p => p.active && p.type === 'blue_rocket' && p.targetId === this.localPlayerId
+        );
+        if (threat) {
+          this.blueWarningCooldown = 2.2;
+          this.callbacks.onCombatEvent('⚠️ SININE RAKETT TULEB SINU POOLE!!!');
+          this.cameraShake = Math.max(this.cameraShake, 0.2);
+        }
+      }
+    }
+
+
     // Update Projectiles
     updateProjectiles(this.projectiles, this.racers, dt, (event) => this.handleCollision(event));
 
@@ -567,6 +667,22 @@ export class ToonCarEngine {
     if (this.posUpdateTimer >= 0.12) {
       this.posUpdateTimer = 0;
       this.updateRacePositions();
+      // Shout when local player gains/loses a place
+      this.positionAnnounceCooldown = Math.max(0, this.positionAnnounceCooldown - 0.12);
+      const local = this.racers.find(r => r.id === this.localPlayerId);
+      if (local && this.gameState === 'racing' && this.positionAnnounceCooldown <= 0) {
+        if (this.lastAnnouncedPosition === 0) {
+          this.lastAnnouncedPosition = local.position;
+        } else if (local.position < this.lastAnnouncedPosition) {
+          this.callbacks.onCombatEvent(`⬆️ Möödusid! Nüüd ${local.position}. koht`);
+          this.lastAnnouncedPosition = local.position;
+          this.positionAnnounceCooldown = 2.5;
+        } else if (local.position > this.lastAnnouncedPosition) {
+          this.callbacks.onCombatEvent(`⬇️ Kaotasid koha — ${local.position}.`);
+          this.lastAnnouncedPosition = local.position;
+          this.positionAnnounceCooldown = 2.5;
+        }
+      }
     }
 
     // 3. Visual meshes, particles, camera & rendering
@@ -628,6 +744,10 @@ export class ToonCarEngine {
           isDrifting: localRacer.isDrifting,
           hasTurbo: localRacer.turboTimer > 0,
           hasShield: localRacer.hasShield,
+          inSlipstream: !!(localRacer as any).inSlipstream,
+          isFinalLap: localRacer.lap >= this.totalLaps && !localRacer.finished,
+          isLeader: localRacer.position === 1,
+          blueThreat: this.projectiles.some(p => p.active && p.type === 'blue_rocket' && p.targetId === this.localPlayerId),
           isWrongWay: !!localRacer.isWrongWay,
           currentLapTime,
           bestLapTime: localRacer.bestLapTime,
@@ -658,8 +778,18 @@ export class ToonCarEngine {
       soundManager.playItemBox();
       this.particles.emitBoxBreak(event.x, event.y, event.z);
       const racer = this.racers.find(r => r.id === event.racerId);
-      if (racer && racer.id === this.localPlayerId && racer.currentItem) {
-        this.callbacks.onCombatEvent(`🎁 Said: ${racer.currentItem.replace('_', ' ').toUpperCase()}!`);
+      if (racer) {
+        // Hold item until player/AI presses use — short lock so held keys don't dump instantly
+        this.itemArmTimers.set(racer.id, 0.5);
+        if (racer.isAI) {
+          const ctrl = this.aiControllers.get(racer.id);
+          if (ctrl) ctrl.itemCooldown = Math.max(ctrl.itemCooldown, 1.5);
+        }
+        if (racer.id === this.localPlayerId && racer.currentItem) {
+          const info = POWER_UPS[racer.currentItem];
+          const label = info ? `${info.icon} ${info.name}` : racer.currentItem;
+          this.callbacks.onCombatEvent(`🎁 Said: ${label}!  →  vajuta E`);
+        }
       }
     } else if (event.type === 'rocket_hit') {
       soundManager.playExplosion();
@@ -671,6 +801,7 @@ export class ToonCarEngine {
       const target = this.racers.find(r => r.id === event.targetId);
       if (attacker && target) {
         this.callbacks.onCombatEvent(`💥 ${attacker.name} tabas raketiga ${target.name}!`);
+        if (attacker.id === this.localPlayerId) this.registerHitStreak();
       }
     } else if (event.type === 'blue_rocket_hit') {
       soundManager.playExplosion();
@@ -680,6 +811,7 @@ export class ToonCarEngine {
       const target = this.racers.find(r => r.id === event.targetId);
       if (attacker && target) {
         this.callbacks.onCombatEvent(`🔷 ${attacker.name} SININE RAKETT tabas liidrit ${target.name}!`);
+        if (attacker.id === this.localPlayerId) this.registerHitStreak();
       }
     } else if (event.type === 'thundercloud_strike') {
       soundManager.playExplosion();
@@ -718,8 +850,11 @@ export class ToonCarEngine {
 
   public firePowerUp(racer: RacerState) {
     if (!racer.currentItem) return;
+    const arm = this.itemArmTimers.get(racer.id) || 0;
+    if (arm > 0) return; // still locked after pickup (player + AI)
     const item = racer.currentItem;
     racer.currentItem = null;
+    this.itemArmTimers.delete(racer.id);
 
     if (item === 'turbo') {
       racer.turboTimer = 3.5;
@@ -753,6 +888,10 @@ export class ToonCarEngine {
         }
       });
       this.callbacks.onCombatEvent(`🌩️ ${racer.name} lõi kõiki välguga!`);
+      this.cameraShake = Math.max(this.cameraShake, 0.9);
+      this.racers.forEach(r => {
+        this.particles.emitLightning(r.x, r.y, r.z);
+      });
     } else if (item === 'anvil') {
       // Squash leader!
       const leader = this.racers.find(r => r.position === 1 && r.id !== racer.id);
@@ -915,7 +1054,8 @@ export class ToonCarEngine {
       racer.shieldTimer = 7.0;
       soundManager.playTurbo();
       if (racer.id === this.localPlayerId) {
-        this.callbacks.onCombatEvent('⭐ SUPER TÄHT! Võitmatu!');
+        this.callbacks.onCombatEvent('⭐ SUPER TÄHT! VÕITMATU — PÜHI NAD TEELT!');
+        this.cameraShake = 0.35;
       }
     }
   }
@@ -943,14 +1083,23 @@ export class ToonCarEngine {
         mesh.position.set(p.x, p.y, p.z);
         if (p.type === 'rocket' || p.type === 'blue_rocket') {
           mesh.rotation.y = Math.atan2(p.vx, p.vz);
-        } else if (p.type === 'thundercloud') {
-          mesh.rotation.y += 0.03;
-          // Bob while idle
-          if (p.state === 'idle') {
-            mesh.position.y = p.y + Math.sin(performance.now() * 0.004) * 0.25;
+          // Occasional exhaust so rockets stay readable in 3D
+          if (Math.random() < 0.18) {
+            this.particles.emitNitroFlame(
+              p.x - Math.sin(mesh.rotation.y) * 0.8,
+              p.y,
+              p.z - Math.cos(mesh.rotation.y) * 0.8,
+              mesh.rotation.y
+            );
           }
-          // Cloud sparks while chasing
-          if (p.state === 'chasing' && Math.random() < 0.25) {
+        } else if (p.type === 'thundercloud') {
+          mesh.rotation.y += 0.04;
+          const s = p.state === 'chasing' ? 1.25 : 1.0;
+          mesh.scale.setScalar(s + Math.sin(performance.now() * 0.006) * 0.08);
+          if (p.state === 'idle') {
+            mesh.position.y = p.y + Math.sin(performance.now() * 0.004) * 0.35;
+          }
+          if (p.state === 'chasing' && Math.random() < 0.35) {
             this.particles.emitCloudSparks(p.x, p.y, p.z);
           }
         } else {
@@ -1124,6 +1273,15 @@ export class ToonCarEngine {
 
     this.camera.up.set(0, 1, 0);
     this.camera.lookAt(this.currentCamLookTarget);
+
+    // Camera shake juice (was set on hits but never applied!)
+    if (this.cameraShake > 0.001) {
+      const s = this.cameraShake;
+      this.camera.position.x += (Math.random() - 0.5) * s * 0.55;
+      this.camera.position.y += (Math.random() - 0.5) * s * 0.35;
+      this.camera.position.z += (Math.random() - 0.5) * s * 0.55;
+      this.cameraShake = Math.max(0, this.cameraShake - dt * 2.8);
+    }
 
     // FOV changes rarely — avoid updateProjectionMatrix every frame (GPU/CPU stutter source)
     const targetFOV = player.turboTimer > 0 ? 74 : (player.speed > 25 ? 68 : 64);

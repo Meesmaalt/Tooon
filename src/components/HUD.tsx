@@ -14,6 +14,10 @@ interface HUDProps {
   isDrifting: boolean;
   hasTurbo: boolean;
   hasShield: boolean;
+  inSlipstream?: boolean;
+  isFinalLap?: boolean;
+  isLeader?: boolean;
+  blueThreat?: boolean;
   isWrongWay?: boolean;
   currentLapTime?: number;
   bestLapTime?: number | null;
@@ -54,6 +58,10 @@ export const HUD: React.FC<HUDProps> = ({
   isDrifting,
   hasTurbo,
   hasShield,
+  inSlipstream = false,
+  isFinalLap = false,
+  isLeader = false,
+  blueThreat = false,
   isWrongWay = false,
   currentLapTime = 0,
   bestLapTime = null,
@@ -79,6 +87,35 @@ export const HUD: React.FC<HUDProps> = ({
     toCanvasY: (worldZ: number) => number;
   } | null>(null);
   const [isMuted, setIsMuted] = React.useState(false);
+  const [rouletteIcon, setRouletteIcon] = React.useState<string | null>(null);
+  const [showFinalItem, setShowFinalItem] = React.useState(true);
+  const prevItemRef = React.useRef<PowerUpType | null>(null);
+
+  // Mario Kart-style item roulette when a new item is picked up
+  useEffect(() => {
+    if (currentItem && currentItem !== prevItemRef.current) {
+      prevItemRef.current = currentItem;
+      setShowFinalItem(false);
+      const icons = Object.values(POWER_UPS).map(p => p.icon);
+      let ticks = 0;
+      const maxTicks = 14;
+      const iv = setInterval(() => {
+        setRouletteIcon(icons[Math.floor(Math.random() * icons.length)]);
+        ticks++;
+        if (ticks >= maxTicks) {
+          clearInterval(iv);
+          setRouletteIcon(null);
+          setShowFinalItem(true);
+        }
+      }, 55);
+      return () => clearInterval(iv);
+    }
+    if (!currentItem) {
+      prevItemRef.current = null;
+      setRouletteIcon(null);
+      setShowFinalItem(true);
+    }
+  }, [currentItem]);
 
   const toggleMute = () => {
     const muted = soundManager.toggleMute();
@@ -227,7 +264,7 @@ export const HUD: React.FC<HUDProps> = ({
             className={`bg-gradient-to-b ${posBadge.color} ${posBadge.border} border-3 shadow-xl rounded-2xl px-4 py-2 text-center text-white transform -rotate-3 transition-transform`}
           >
             <div className="text-3xl md:text-5xl font-black font-['Titan_One',sans-serif] drop-shadow-md">
-              {posBadge.text}
+              {isLeader ? '👑' : ''}{posBadge.text}
             </div>
             <div className="text-[10px] md:text-xs font-bold text-slate-900/80 -mt-1 uppercase tracking-wider">
               / {totalRacers} SÕITJAT
@@ -285,6 +322,20 @@ export const HUD: React.FC<HUDProps> = ({
         )}
 
         {/* Center: Big Countdown / Final Lap flash banner */}
+        {/* Blue rocket DANGER */}
+        {blueThreat && (
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 z-50 px-6 py-2 rounded-xl bg-blue-600/95 border-4 border-cyan-300 text-white font-black text-lg md:text-2xl shadow-[0_0_30px_rgba(34,211,238,0.8)] animate-pulse tracking-wider">
+            ⚠️ SININE RAKETT!!!
+          </div>
+        )}
+
+        {/* Final lap ribbon */}
+        {isFinalLap && !countdownText && !blueThreat && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 px-5 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-orange-500 border-2 border-yellow-300 text-white font-black text-sm md:text-base shadow-xl animate-pulse">
+            🏁 VIIMANE RING
+          </div>
+        )}
+
         {countdownText && (
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
             <div className="text-6xl md:text-8xl font-black text-amber-400 drop-shadow-[0_8px_16px_rgba(0,0,0,0.8)] font-['Titan_One',sans-serif] animate-bounce">
@@ -317,6 +368,33 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
       </div>
 
+      {/* TOP CENTER: Item roulette + held item */}
+      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-4 md:top-6 z-30 flex flex-col items-center">
+        {currentItem ? (
+          <button
+            type="button"
+            onClick={onUseItem}
+            disabled={!!rouletteIcon}
+            className={`pointer-events-auto group relative flex flex-col items-center gap-1 px-5 py-3 rounded-2xl border-4 bg-gradient-to-b from-slate-900/95 to-slate-950/95 shadow-[0_0_40px_rgba(251,191,36,0.45)] cursor-pointer ${
+              rouletteIcon ? 'border-fuchsia-400 scale-110' : 'border-amber-300 animate-[pulse_2s_ease-in-out_infinite]'
+            }`}
+            title="Kasuta eseme (E)"
+          >
+            <span className="text-5xl md:text-6xl drop-shadow-lg leading-none select-none">
+              {rouletteIcon || (showFinalItem ? (POWER_UPS[currentItem]?.icon || '🎁') : '❓')}
+            </span>
+            <span className="text-sm md:text-base font-black text-amber-300 tracking-wide uppercase min-h-[1.25rem]">
+              {rouletteIcon ? '…' : (showFinalItem ? (POWER_UPS[currentItem]?.name || currentItem) : '')}
+            </span>
+            {!rouletteIcon && showFinalItem && (
+              <span className="text-[10px] font-bold text-slate-400 group-hover:text-amber-200">
+                [E] või klõpsa
+              </span>
+            )}
+          </button>
+        ) : null}
+      </div>
+
       {/* Center Left: Live Combat Events Feed */}
       <div className="max-w-sm space-y-1.5 self-start">
         {combatEvents.slice(-3).map((evt, idx) => (
@@ -335,9 +413,9 @@ export const HUD: React.FC<HUDProps> = ({
         <div className="flex items-center gap-3">
           <div
             onClick={onUseItem}
-            className={`pointer-events-auto relative w-20 h-20 md:w-24 md:h-24 rounded-2xl border-4 transition-all flex flex-col items-center justify-center cursor-pointer shadow-2xl ${
+            className={`pointer-events-auto relative w-16 h-16 md:w-20 md:h-20 rounded-2xl border-4 transition-all flex flex-col items-center justify-center cursor-pointer shadow-2xl ${
               currentItem
-                ? 'bg-gradient-to-br from-amber-400/90 to-yellow-600/90 border-yellow-200 scale-105 animate-pulse'
+                ? 'bg-gradient-to-br from-amber-400/90 to-yellow-600/90 border-yellow-200'
                 : 'bg-slate-900/80 border-slate-700/80'
             }`}
           >
@@ -363,6 +441,11 @@ export const HUD: React.FC<HUDProps> = ({
             {hasTurbo && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-black text-xs shadow-lg animate-bounce">
                 <Zap className="w-3.5 h-3.5 fill-current" /> NITRO!
+              </div>
+            )}
+            {inSlipstream && (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500 text-slate-950 font-black text-xs shadow-lg">
+                💨 DRAFT
               </div>
             )}
             {hasShield && (

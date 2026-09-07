@@ -471,20 +471,28 @@ export function updateProjectiles(
     }
 
     if (p.type === 'rocket') {
-      // Red Rocket: short-range, homing toward closest opponent ahead
-      if (p.targetId) {
-        const target = racers.find(r => r.id === p.targetId);
-        if (target) {
-          const dx = target.x - p.x;
-          const dz = target.z - p.z;
-          const targetDist = Math.hypot(dx, dz);
-          if (targetDist > 0.1) {
-            const steerX = (dx / targetDist) * 52;
-            const steerZ = (dz / targetDist) * 52;
-            p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 7);
-            p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 7);
-            p.y = THREE.MathUtils.lerp(p.y, target.y + 0.4, dt * 5);
-          }
+      // Red Rocket: short-range homing — retarget nearest non-owner if needed
+      let target = p.targetId ? racers.find(r => r.id === p.targetId && !r.finished) : undefined;
+      if (!target) {
+        let bestD = 55;
+        for (const r of racers) {
+          if (r.id === p.ownerId || r.finished) continue;
+          const d = Math.hypot(r.x - p.x, r.z - p.z);
+          if (d < bestD) { bestD = d; target = r; }
+        }
+        if (target) p.targetId = target.id;
+      }
+      if (target) {
+        const dx = target.x - p.x;
+        const dz = target.z - p.z;
+        const targetDist = Math.hypot(dx, dz);
+        if (targetDist > 0.1) {
+          const spd = 58;
+          const steerX = (dx / targetDist) * spd;
+          const steerZ = (dz / targetDist) * spd;
+          p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 9);
+          p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 9);
+          p.y = THREE.MathUtils.lerp(p.y, target.y + 0.45, dt * 6);
         }
       }
 
@@ -492,12 +500,12 @@ export function updateProjectiles(
       p.z += p.vz * dt;
       p.y += p.vy * dt;
 
-      // Collision check with cars (grace period for owner)
+      // Collision (owner grace ~0.45s based on remaining life when spawned at 4.2)
       for (const racer of racers) {
-        if (racer.id === p.ownerId && p.life > 3.7) continue;
+        if (racer.id === p.ownerId && p.life > 3.75) continue;
 
         const dist = Math.hypot(racer.x - p.x, racer.z - p.z);
-        if (dist < 2.2) {
+        if (dist < 2.35) {
           p.active = false;
 
           if (racer.starTimer > 0) {
@@ -539,11 +547,11 @@ export function updateProjectiles(
         const targetDist = Math.hypot(dx, dz);
 
         if (targetDist > 0.1) {
-          const chaseSpeed = 82;
+          const chaseSpeed = 88;
           const steerX = (dx / targetDist) * chaseSpeed;
           const steerZ = (dz / targetDist) * chaseSpeed;
-          p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 8);
-          p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 8);
+          p.vx = THREE.MathUtils.lerp(p.vx, steerX, dt * 10);
+          p.vz = THREE.MathUtils.lerp(p.vz, steerZ, dt * 10);
           p.y = THREE.MathUtils.lerp(p.y, target.y + 0.6, dt * 6);
         }
 
@@ -595,28 +603,37 @@ export function updateProjectiles(
       p.state = p.state || 'idle';
 
       if (p.state === 'idle') {
-        // Float stationary above track
+        // Bob height while waiting (visual handled in mesh sync too)
+        p.y += Math.sin((60 - p.life) * 3) * 0.002;
         for (const racer of racers) {
-          if (racer.id === p.ownerId && p.life > 58.0) continue; // 2s grace for owner
+          if (racer.id === p.ownerId && p.life > 57.5) continue; // brief owner grace
 
           const dist = Math.hypot(racer.x - p.x, racer.z - p.z);
-          if (dist < 8.5) {
-            // Opponent detected! Start chasing!
+          if (dist < 11) {
             p.state = 'chasing';
             p.targetId = racer.id;
-            p.timer = 3.5; // 3.5s warning countdown!
+            p.timer = 3.2;
             break;
           }
         }
       } else if (p.state === 'chasing') {
-        const target = racers.find(r => r.id === p.targetId);
+        let target = racers.find(r => r.id === p.targetId && !r.finished);
+        // If original target finished, chase nearest
+        if (!target) {
+          let best = 40;
+          for (const r of racers) {
+            if (r.id === p.ownerId || r.finished) continue;
+            const d = Math.hypot(r.x - p.x, r.z - p.z);
+            if (d < best) { best = d; target = r; }
+          }
+          if (target) p.targetId = target.id;
+        }
         if (target) {
-          // Hover closely right above the victim
-          p.x = THREE.MathUtils.lerp(p.x, target.x, dt * 11);
-          p.y = THREE.MathUtils.lerp(p.y, target.y + 2.3, dt * 9);
-          p.z = THREE.MathUtils.lerp(p.z, target.z, dt * 11);
+          p.x = THREE.MathUtils.lerp(p.x, target.x, dt * 12);
+          p.y = THREE.MathUtils.lerp(p.y, target.y + 2.5, dt * 10);
+          p.z = THREE.MathUtils.lerp(p.z, target.z, dt * 12);
 
-          p.timer = (p.timer || 3.5) - dt;
+          p.timer = (p.timer || 3.2) - dt;
 
           if (p.timer <= 0) {
             // THUNDERBOLT STRIKE!
@@ -706,6 +723,38 @@ export function updateProjectiles(
           break;
         }
       }
+    }
+  }
+}
+
+
+/**
+ * Arcade slipstream: slight speed bonus when drafting behind another car
+ */
+export function applySlipstream(racers: RacerState[], dt: number) {
+  for (let i = 0; i < racers.length; i++) {
+    const r = racers[i];
+    if (r.finished || r.spinTimer > 0) continue;
+    let best = 0;
+    for (let j = 0; j < racers.length; j++) {
+      if (i === j) continue;
+      const o = racers[j];
+      const dx = o.x - r.x;
+      const dz = o.z - r.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 3.5 || dist > 14) continue;
+      // Other should be roughly ahead of us
+      const fwdX = Math.sin(r.rotY);
+      const fwdZ = Math.cos(r.rotY);
+      const dot = (dx * fwdX + dz * fwdZ) / dist;
+      if (dot < 0.65) continue; // not in front cone
+      best = Math.max(best, 1 - (dist - 3.5) / 10.5);
+    }
+    if (best > 0.05) {
+      r.speed += 6.5 * best * dt;
+      (r as any).inSlipstream = true;
+    } else {
+      (r as any).inSlipstream = false;
     }
   }
 }

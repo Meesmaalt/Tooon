@@ -7,7 +7,7 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
     name: 'Päikeserand (Sunny Beach Riviera GP)',
     theme: 'beach',
     difficulty: 'Easy',
-    description: 'Avar ookeanipromenaad: 560m peatsirge, Kuldranna kiirtee, panoraamne tuletorni kaljutõus ja lahe rippsild!',
+    description: 'Avar ookeanipromenaad: 560m peatsirge, marina šikaan, Kuldranna kiirtee, tuletorni kaljutõus, rippsild ja merikoobas. Tribune + reklaamtahvlid!',
     lengthMeters: 2680,
     lapsDefault: 3,
     skyColor: 0x60a5fa,
@@ -23,11 +23,15 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
       [0, 0, 120],
       [0, 0, 180],
       [0, 0, 240],
-      // 2. Marina Grand Prix kurv ja lai paremkaare sisenemine
+      // 2. Marina Grand Prix kurv, topelt-šikaan ja lai paremkaar
       [35, 1.0, 310],
+      [70, 1.5, 340],
       [110, 2.5, 365],
+      [155, 3.2, 385],
       [200, 4.0, 390],
+      [250, 4.8, 388],
       [295, 5.5, 375],
+      [335, 6.2, 350],
       [370, 7.0, 320],
       // 3. Kuldranna tagasirge (The Golden Sands Highway - 420m täiskiirusel sirge!)
       [410, 8.5, 240],
@@ -127,6 +131,7 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
   {
     id: 'cyber_canyon',
     name: 'Küberkanjon (Neon Cyber Grid)',
+    // Tribune + neon billboards via InstancedMesh
     theme: 'cyber',
     difficulty: 'Hard',
     description: 'GP stiilis küberrada: 600m neoon-magistraal, 32m kõrgune gravitatsioonisild, laser-tunnel ja kiired šikaanid!',
@@ -1421,7 +1426,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const sectors = getTrackSectors(trackDef.theme);
 
   // Build dense centerline (720 points along spline) for accurate physics on long multi-level tracks
-  const denseCount = 300;
+  const denseCount = 400;
   const centerlinePoints: CenterlinePoint[] = [];
   const upVec = new THREE.Vector3(0, 1, 0);
 
@@ -1605,7 +1610,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   };
 
   // 1. Generate Road Ribbon Geometry with multi-surface materials
-  const segments = 180;
+  const segments = 240;
   const roadGeo = new THREE.BufferGeometry();
   const roadVertices: number[] = [];
   const roadUvs: number[] = [];
@@ -1979,7 +1984,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   // 4. Item Boxes distributed across the long track (Shared geometries and materials for instant 60fps rendering)
   const itemBoxes: ItemBoxPosition[] = [];
-  const itemStations = [0.06, 0.18, 0.31, 0.44, 0.58, 0.71, 0.85, 0.94];
+  // More stations, only 2 boxes per row — cleaner pickups, fewer draw calls
+  const itemStations = [0.06, 0.14, 0.23, 0.33, 0.43, 0.53, 0.63, 0.73, 0.83, 0.92];
 
   // Shared geometries and materials for all item boxes to prevent GPU state stalls and memory overhead
   const sharedCubeGeo = new THREE.BoxGeometry(1.35, 1.35, 1.35);
@@ -2008,26 +2014,23 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     const tangent = curve.getTangentAt(t).normalize();
     const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
 
-    // 4 boxes across track width
-    [-4.5, -1.5, 1.5, 4.5].forEach(offset => {
+    // 2 boxes across — one clear choice left/right (was 4 → double-pickup + FPS hit)
+    [-2.6, 2.6].forEach(offset => {
       const boxPos = pt.clone().add(right.clone().multiplyScalar(offset));
       boxPos.y = pt.y + 1.35;
 
       const boxGroup = new THREE.Group();
       boxGroup.position.copy(boxPos);
 
-      // Outer crystal cube with bright cartoon arcade glow
       const cube = new THREE.Mesh(sharedCubeGeo, sharedCubeMat);
       boxGroup.add(cube);
 
-      // Inner spinning golden prize gem
       const gem = new THREE.Mesh(sharedGemGeo, sharedGemMat);
       boxGroup.add(gem);
 
-      // Orbiting sparkle ring
-      for (let orb = 0; orb < 4; orb++) {
+      for (let orb = 0; orb < 2; orb++) {
         const star = new THREE.Mesh(sharedStarGeo, sharedStarMat);
-        const orbAngle = (orb / 4) * Math.PI * 2;
+        const orbAngle = (orb / 2) * Math.PI * 2;
         star.position.set(Math.cos(orbAngle) * 0.95, 0, Math.sin(orbAngle) * 0.95);
         boxGroup.add(star);
       }
@@ -2045,7 +2048,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   // 5. Speed Boost Pads on Track with pulsing chevron arrows & neon borders
   const boostPads: BoostPadPosition[] = [];
-  const boostStations = [0.12, 0.25, 0.38, 0.52, 0.66, 0.79, 0.92];
+  const boostStations = [0.10, 0.22, 0.34, 0.46, 0.58, 0.70, 0.82, 0.93];
 
   boostStations.forEach(t => {
     const pt = curve.getPointAt(t);
@@ -2097,37 +2100,87 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     });
   });
 
-  // Helper to ensure scenery, trees, and props never spawn inside the start straight corridor or overlap any track section
+  // Fast track-proximity: uses precomputed centerline (no curve.getPointAt spam)
   const isTooCloseToTrack = (pos: THREE.Vector3, minDist: number = 14.0): boolean => {
-    // Clear start straightaway corridor: Z between -440 and +280, X between -32 and +32
     if (Math.abs(pos.x) < 32 && pos.z > -440 && pos.z < 280) {
       return true;
     }
-    // Proximity check against track curve centerline
-    const samples = 90;
-    for (let s = 0; s < samples; s++) {
-      const samplePt = curve.getPointAt(s / samples);
+    const minDistSq = minDist * minDist;
+    // Stride through dense centerline — O(n/8) instead of 40 expensive spline samples
+    const step = Math.max(1, Math.floor(denseCount / 50));
+    for (let s = 0; s < denseCount; s += step) {
+      const samplePt = centerlinePoints[s].point;
       const dx = pos.x - samplePt.x;
       const dz = pos.z - samplePt.z;
-      if (dx * dx + dz * dz < minDist * minDist) {
-        return true;
-      }
+      if (dx * dx + dz * dz < minDistSq) return true;
     }
     return false;
   };
+
+
+  // --- Shared grandstands / billboards (InstancedMesh = 1 draw call) ---
+  const addGrandstands = () => {
+    const standCount = 8;
+    const boxGeo = new THREE.BoxGeometry(14, 3.2, 6);
+    const seatMat = new THREE.MeshLambertMaterial({ color: 0x1e3a5f });
+    const stands = new THREE.InstancedMesh(boxGeo, seatMat, standCount);
+    const dummy = new THREE.Object3D();
+    let placed = 0;
+    for (let i = 0; i < standCount * 3 && placed < standCount; i++) {
+      const t = (0.08 + i * 0.11) % 1;
+      const pt = centerlinePoints[Math.floor(t * denseCount) % denseCount];
+      const side = placed % 2 === 0 ? 1 : -1;
+      const pos = pt.point.clone().add(pt.right.clone().multiplyScalar(side * (halfW + 16)));
+      if (isTooCloseToTrack(pos, 12)) continue;
+      dummy.position.set(pos.x, pt.point.y + 1.4, pos.z);
+      dummy.lookAt(pt.point.x, pt.point.y + 1.4, pt.point.z);
+      dummy.updateMatrix();
+      stands.setMatrixAt(placed, dummy.matrix);
+      placed++;
+    }
+    stands.instanceMatrix.needsUpdate = true;
+    stands.castShadow = false;
+    stands.receiveShadow = true;
+    decorations.add(stands);
+
+    // Simple billboard poles (theme-colored)
+    const billboardColors: Record<string, number> = {
+      beach: 0xf97316, spooky: 0x7c3aed, cyber: 0x06b6d4,
+      ice: 0x38bdf8, volcano: 0xef4444, sky: 0xeab308,
+    };
+    const bColor = billboardColors[trackDef.theme] || 0xfacc15;
+    const boardGeo = new THREE.BoxGeometry(8, 3, 0.3);
+    const boardMat = new THREE.MeshLambertMaterial({ color: bColor, emissive: bColor, emissiveIntensity: 0.15 });
+    const boards = new THREE.InstancedMesh(boardGeo, boardMat, 6);
+    placed = 0;
+    for (let i = 0; i < 18 && placed < 6; i++) {
+      const t = (0.15 + i * 0.13) % 1;
+      const pt = centerlinePoints[Math.floor(t * denseCount) % denseCount];
+      const side = placed % 2 === 0 ? -1 : 1;
+      const pos = pt.point.clone().add(pt.right.clone().multiplyScalar(side * (halfW + 11)));
+      if (isTooCloseToTrack(pos, 10)) continue;
+      dummy.position.set(pos.x, pt.point.y + 3.5, pos.z);
+      dummy.lookAt(pt.point.x, pt.point.y + 3.5, pt.point.z);
+      dummy.updateMatrix();
+      boards.setMatrixAt(placed, dummy.matrix);
+      placed++;
+    }
+    boards.instanceMatrix.needsUpdate = true;
+    decorations.add(boards);
+  };
+  addGrandstands();
+
 
   // 6. Rich Themed Scenery Props
   let waterMesh: THREE.Mesh | undefined;
 
   if (trackDef.theme === 'beach') {
     // Large Animated Tropical Ocean
-    const oceanGeo = new THREE.PlaneGeometry(3400, 3400, 48, 48);
-    const oceanMat = new THREE.MeshStandardMaterial({
+    const oceanGeo = new THREE.PlaneGeometry(3400, 3400, 24, 24);
+    const oceanMat = new THREE.MeshLambertMaterial({
       color: 0x0284c7,
-      roughness: 0.15,
-      metalness: 0.25,
       transparent: true,
-      opacity: 0.8,
+      opacity: 0.75,
       side: THREE.DoubleSide,
     });
     waterMesh = new THREE.Mesh(oceanGeo, oceanMat);
@@ -2136,9 +2189,26 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     waterMesh.receiveShadow = true;
     decorations.add(waterMesh);
 
+    // Shared materials (one shader program, many meshes) — keep detail, cut CPU/GPU state changes
+    const palmTrunkMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    const palmLeafMat = new THREE.MeshLambertMaterial({ color: 0x15803d });
+    const coconutMat = new THREE.MeshLambertMaterial({ color: 0x451a03 });
+    const umbrellaPoleMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
+    const chairMat = new THREE.MeshLambertMaterial({ color: 0xfef08a });
+    const torchStickMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    const torchFlameMat = new THREE.MeshLambertMaterial({ color: 0xf97316, emissive: 0xea580c, emissiveIntensity: 0.85 });
+    const palmTrunkGeo = new THREE.CylinderGeometry(0.35, 0.6, 7.5, 7);
+    const coconutGeo = new THREE.SphereGeometry(0.28, 6, 6);
+    const leafGeo = new THREE.ConeGeometry(2.4, 1.2, 5);
+    const umbrellaPoleGeo = new THREE.CylinderGeometry(0.08, 0.08, 3.5, 6);
+    const canopyGeo = new THREE.ConeGeometry(2.2, 1.2, 8);
+    const chairGeo = new THREE.BoxGeometry(1.6, 0.4, 0.8);
+    const torchStickGeo = new THREE.CylinderGeometry(0.12, 0.15, 3.2, 6);
+    const flameGeo = new THREE.ConeGeometry(0.35, 0.7, 6);
+
     // Palm trees, beach umbrellas, deck chairs, tiki torches, and a grand lighthouse
-    for (let i = 0; i < 50; i++) {
-      const t = (i / 50 + Math.sin(i * 99) * 0.015 + 1) % 1;
+    for (let i = 0; i < 42; i++) {
+      const t = (i / 42 + Math.sin(i * 99) * 0.015 + 1) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
       const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
@@ -2157,10 +2227,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
         const tree = new THREE.Group();
         tree.position.copy(propPos);
 
-        const trunk = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.35, 0.6, 7.5, 8),
-          new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.85 })
-        );
+        const trunk = new THREE.Mesh(palmTrunkGeo, palmTrunkMat);
         trunk.position.y = 3.75;
         trunk.rotation.z = side * 0.15;
         trunk.castShadow = true;
@@ -2168,18 +2235,14 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
         // Coconut bunch
         for (let c = 0; c < 3; c++) {
-          const coconut = new THREE.Mesh(
-            new THREE.SphereGeometry(0.28, 8, 8),
-            new THREE.MeshStandardMaterial({ color: 0x451a03 })
-          );
+          const coconut = new THREE.Mesh(coconutGeo, coconutMat);
           coconut.position.set((c - 1) * 0.35, 7.2, 0.2);
           tree.add(coconut);
         }
 
         // Lush arched palm fronds
-        const leafMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 });
         for (let l = 0; l < 7; l++) {
-          const leaf = new THREE.Mesh(new THREE.ConeGeometry(2.4, 1.2, 5), leafMat);
+          const leaf = new THREE.Mesh(leafGeo, palmLeafMat);
           leaf.position.set(0, 7.4, 0);
           leaf.rotation.y = (l / 7) * Math.PI * 2;
           leaf.rotation.z = 0.55;
@@ -2193,27 +2256,18 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
         beachSet.position.copy(propPos);
 
         // Umbrella pole & canopy
-        const pole = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.08, 0.08, 3.5, 8),
-          new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.7 })
-        );
+        const pole = new THREE.Mesh(umbrellaPoleGeo, umbrellaPoleMat);
         pole.position.y = 1.75;
         beachSet.add(pole);
 
         const canopyColor = i % 2 === 0 ? 0xef4444 : 0x0284c7;
-        const canopy = new THREE.Mesh(
-          new THREE.ConeGeometry(2.2, 1.2, 8),
-          new THREE.MeshStandardMaterial({ color: canopyColor, roughness: 0.5 })
-        );
+        const canopy = new THREE.Mesh(canopyGeo, new THREE.MeshLambertMaterial({ color: canopyColor }));
         canopy.position.y = 3.2;
         canopy.castShadow = true;
         beachSet.add(canopy);
 
         // Beach chair
-        const chair = new THREE.Mesh(
-          new THREE.BoxGeometry(1.6, 0.4, 0.8),
-          new THREE.MeshStandardMaterial({ color: 0xfef08a })
-        );
+        const chair = new THREE.Mesh(chairGeo, chairMat);
         chair.position.set(1.0, 0.2, 0);
         chair.rotation.y = Math.random() * Math.PI;
         beachSet.add(chair);
@@ -2224,21 +2278,11 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
         const torch = new THREE.Group();
         torch.position.copy(propPos);
 
-        const stick = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.12, 0.15, 3.2, 6),
-          new THREE.MeshStandardMaterial({ color: 0x78350f })
-        );
+        const stick = new THREE.Mesh(torchStickGeo, torchStickMat);
         stick.position.y = 1.6;
         torch.add(stick);
 
-        const flame = new THREE.Mesh(
-          new THREE.ConeGeometry(0.35, 0.7, 6),
-          new THREE.MeshStandardMaterial({
-            color: 0xf97316,
-            emissive: 0xea580c,
-            emissiveIntensity: 0.9,
-          })
-        );
+        const flame = new THREE.Mesh(flameGeo, torchFlameMat);
         flame.position.y = 3.3;
         torch.add(flame);
 
@@ -2309,9 +2353,16 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
     decorations.add(gateGroup);
 
+    const pumpkinMat = new THREE.MeshLambertMaterial({ color: 0xea580c, emissive: 0xc2410c, emissiveIntensity: 0.6 });
+    const pumpkinGeo = new THREE.SphereGeometry(1.2, 10, 10);
+    const tombMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+    const tombGeo = new THREE.BoxGeometry(1.4, 2.8, 0.45);
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x15803d });
+    const stemGeo = new THREE.CylinderGeometry(0.12, 0.16, 0.6, 6);
+
     // Spooky Cemetery Props: Jack-o'-Lanterns, Tombstones, Crypts, Dead Trees
-    for (let i = 0; i < 45; i++) {
-      const t = (i / 45) % 1;
+    for (let i = 0; i < 40; i++) {
+      const t = (i / 40) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
       const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
@@ -2330,31 +2381,17 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       if (i % 3 === 0) {
         // Glowing Jack-o'-Lantern
-        const pumpkin = new THREE.Mesh(
-          new THREE.SphereGeometry(1.2, 12, 12),
-          new THREE.MeshStandardMaterial({
-            color: 0xea580c,
-            emissive: 0xc2410c,
-            emissiveIntensity: 0.75,
-            roughness: 0.6,
-          })
-        );
+        const pumpkin = new THREE.Mesh(pumpkinGeo, pumpkinMat);
         pumpkin.scale.set(1.3, 0.95, 1.3);
         pumpkin.position.y = 0.9;
         propGroup.add(pumpkin);
 
-        const stem = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.12, 0.16, 0.6, 6),
-          new THREE.MeshStandardMaterial({ color: 0x15803d })
-        );
+        const stem = new THREE.Mesh(stemGeo, stemMat);
         stem.position.y = 1.8;
         propGroup.add(stem);
       } else if (i % 3 === 1) {
         // Weathered Tombstone / Cross
-        const tomb = new THREE.Mesh(
-          new THREE.BoxGeometry(1.4, 2.8, 0.45),
-          new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 })
-        );
+        const tomb = new THREE.Mesh(tombGeo, tombMat);
         tomb.position.y = 1.4;
         tomb.rotation.y = (Math.random() - 0.5) * 0.6;
         propGroup.add(tomb);
@@ -2410,7 +2447,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     }
 
     // Cyber Billboards & Neon Pylons
-    for (let i = 0; i < 35; i++) {
+    for (let i = 0; i < 22; i++) {
       const t = (i / 35) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
@@ -2454,8 +2491,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
   } else if (trackDef.theme === 'ice') {
     // Frozen Peak: Snowy Mountain Pines, Snowmen with hats, and Crystalline Ice Arches
-    for (let i = 0; i < 45; i++) {
-      const t = (i / 45) % 1;
+    for (let i = 0; i < 40; i++) {
+      const t = (i / 40) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
       const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
@@ -2592,8 +2629,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     }
 
     // 3. Volcanic Props: Basalt columns, smoking lava rocks, and glowing amber crystals
-    for (let i = 0; i < 45; i++) {
-      const t = (i / 45) % 1;
+    for (let i = 0; i < 40; i++) {
+      const t = (i / 40) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
       const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
@@ -2671,7 +2708,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     decorations.add(waterMesh);
 
     // 2. Futuristic Glass & Steel Sky Towers alongside elevated skyways
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 24; i++) {
       const t = (i / 40) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
@@ -3137,6 +3174,30 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
       rightWall.rotation.y = rotY;
       wallsGroup.add(rightWall);
     }
+  }
+
+  // CODE PERF: static world — skip matrix updates every frame
+  const freezeStatic = (root: THREE.Object3D) => {
+    root.traverse((obj) => {
+      obj.matrixAutoUpdate = false;
+      obj.updateMatrix();
+    });
+  };
+  freezeStatic(decorations);
+  freezeStatic(wallsGroup);
+  freezeStatic(startArch);
+  if (trackMesh) freezeStatic(trackMesh);
+  if (curbsGroup) freezeStatic(curbsGroup);
+
+  // Re-enable matrix updates for animated pieces (item boxes, water, boost pads)
+  itemBoxes.forEach((b) => {
+    b.mesh.traverse((o) => { o.matrixAutoUpdate = true; });
+  });
+  boostPads.forEach((p) => {
+    p.mesh.traverse((o) => { o.matrixAutoUpdate = true; });
+  });
+  if (waterMesh) {
+    waterMesh.matrixAutoUpdate = true;
   }
 
   return {
