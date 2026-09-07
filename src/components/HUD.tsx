@@ -251,7 +251,8 @@ export const HUD: React.FC<HUDProps> = ({
   };
 
   const posBadge = getPositionBadge(position);
-  const isFinalLap = lap === totalLaps;
+  // isFinalLap comes from engine prop (also true on last lap)
+  const showFinalLap = isFinalLap || lap === totalLaps;
 
   return (
     <div id="game-hud" className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-4 md:p-6 overflow-hidden">
@@ -277,7 +278,7 @@ export const HUD: React.FC<HUDProps> = ({
             <div className="text-xl md:text-2xl font-black font-['Titan_One',sans-serif] text-sky-400">
               {lap} <span className="text-slate-500 text-base">/ {totalLaps}</span>
             </div>
-            {isFinalLap && (
+            {showFinalLap && (
               <div className="text-[10px] font-black text-amber-400 animate-pulse uppercase">
                 ⚡ VIIMANE RING!
               </div>
@@ -330,7 +331,7 @@ export const HUD: React.FC<HUDProps> = ({
         )}
 
         {/* Final lap ribbon */}
-        {isFinalLap && !countdownText && !blueThreat && (
+        {showFinalLap && !countdownText && !blueThreat && (
           <div className="absolute top-20 left-1/2 -translate-x-1/2 z-40 px-5 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-orange-500 border-2 border-yellow-300 text-white font-black text-sm md:text-base shadow-xl animate-pulse">
             🏁 VIIMANE RING
           </div>
