@@ -166,6 +166,14 @@ export default function App() {
           } catch (e) {
             console.warn('applyNetworkProjectile failed', e);
           }
+        } else if (msg.type === 'combat_hit' && msg.hit) {
+          const eng = engineRef.current;
+          if (!eng) return;
+          try {
+            eng.applyNetworkHit(msg.hit);
+          } catch (e) {
+            console.warn('applyNetworkHit failed', e);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -333,12 +341,21 @@ export default function App() {
         },
         onProjectileSpawn: (projectile) => {
           const ws = wsRef.current;
-          if (!isMultiplayer || !ws || ws.readyState !== WebSocket.OPEN) return;
-          ws.send(JSON.stringify({
-            type: 'fire_powerup',
-            racerId: myPlayerIdRef.current,
-            projectile,
-          }));
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          try {
+            ws.send(JSON.stringify({
+              type: 'fire_powerup',
+              racerId: myPlayerIdRef.current,
+              projectile,
+            }));
+          } catch (_) {}
+        },
+        onNetworkHit: (hit) => {
+          const ws = wsRef.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          try {
+            ws.send(JSON.stringify({ type: 'combat_hit', hit }));
+          } catch (_) {}
         },
       },
       isMultiplayer

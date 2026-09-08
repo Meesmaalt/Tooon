@@ -785,6 +785,14 @@ export class ToonCarEngine {
     });
   }
 
+  private registerHitStreak() {
+    this.hitStreak += 1;
+    this.hitStreakTimer = 6;
+    if (this.hitStreak === 2) this.callbacks.onCombatEvent('🔥 2x TABAMUS!');
+    else if (this.hitStreak === 3) this.callbacks.onCombatEvent('⚡ 3x KOMBO!!!');
+    else if (this.hitStreak >= 4) this.callbacks.onCombatEvent('💀 DESTROYER!!!');
+  }
+
   private handleCollision(event: CollisionEvent) {
     if (event.type === 'car_bump') {
       soundManager.playBoing();
@@ -812,53 +820,44 @@ export class ToonCarEngine {
           this.callbacks.onCombatEvent(`🎁 Said: ${label}!  →  vajuta E`);
         }
       }
-    } else if (event.type === 'rocket_hit') {
-      soundManager.playExplosion();
-      this.particles.emitExplosion(event.x, event.y, event.z);
+    } else if (event.type === 'rocket_hit' || event.type === 'blue_rocket_hit' || event.type === 'thundercloud_strike' || event.type === 'banana_hit' || event.type === 'mine_hit') {
+      if (event.type === 'banana_hit') {
+        soundManager.playBoing();
+        this.particles.emitSparks(event.x, event.y + 0.2, event.z, 0xfacc15, 6);
+      } else if (event.type === 'thundercloud_strike') {
+        soundManager.playExplosion();
+        this.particles.emitLightning(event.x, event.y, event.z);
+      } else {
+        soundManager.playExplosion();
+        this.particles.emitExplosion(event.x, event.y, event.z);
+      }
       if (event.targetId === this.localPlayerId) {
-        this.cameraShake = 1.0;
+        this.cameraShake = event.type === 'banana_hit' ? 0.5 : 1.0;
       }
       const attacker = this.racers.find(r => r.id === event.racerId);
       const target = this.racers.find(r => r.id === event.targetId);
-      if (attacker && target) {
-        this.callbacks.onCombatEvent(`💥 ${attacker.name} tabas raketiga ${target.name}!`);
-        if (attacker.id === this.localPlayerId) this.registerHitStreak();
-      }
-    } else if (event.type === 'blue_rocket_hit') {
-      soundManager.playExplosion();
-      this.particles.emitExplosion(event.x, event.y, event.z);
-      if (event.targetId === this.localPlayerId) this.cameraShake = 1.2;
-      const attacker = this.racers.find(r => r.id === event.racerId);
-      const target = this.racers.find(r => r.id === event.targetId);
-      if (attacker && target) {
-        this.callbacks.onCombatEvent(`🔷 ${attacker.name} SININE RAKETT tabas liidrit ${target.name}!`);
-        if (attacker.id === this.localPlayerId) this.registerHitStreak();
-      }
-    } else if (event.type === 'thundercloud_strike') {
-      soundManager.playExplosion();
-      this.particles.emitLightning(event.x, event.y, event.z);
-      if (event.targetId === this.localPlayerId) this.cameraShake = 1.1;
-      const target = this.racers.find(r => r.id === event.targetId);
       if (target) {
-        this.callbacks.onCombatEvent(`⛈️ ÄIKESELOÖK tabas ${target.name}!`);
+        const labels: Record<string, string> = {
+          rocket_hit: `💥 ${(attacker && attacker.name) || 'Keegi'} tabas raketiga ${target.name}!`,
+          blue_rocket_hit: `🔷 SININE RAKETT tabas ${target.name}!`,
+          thundercloud_strike: `⛈️ ÄIKESELOÖK tabas ${target.name}!`,
+          banana_hit: `🍌 ${target.name} libises banaanile!`,
+          mine_hit: `💣 ${target.name} sõitis miinile otsa!`,
+        };
+        this.callbacks.onCombatEvent(labels[event.type] || 'Tabamus!');
+        if (attacker && attacker.id === this.localPlayerId) {
+          try { this.registerHitStreak(); } catch (_) { /* ignore */ }
+        }
       }
-    } else if (event.type === 'banana_hit') {
-      soundManager.playBoing();
-      this.particles.emitSparks(event.x, event.y + 0.2, event.z, 0xfacc15, 6);
-      if (event.targetId === this.localPlayerId) this.cameraShake = 0.5;
-      const target = this.racers.find(r => r.id === event.targetId);
-      if (target) {
-        this.callbacks.onCombatEvent(`🍌 ${target.name} libises banaanile!`);
-      }
-    } else if (event.type === 'mine_hit') {
-      soundManager.playExplosion();
-      this.particles.emitExplosion(event.x, event.y, event.z);
-      if (event.targetId === this.localPlayerId) {
-        this.cameraShake = 1.0;
-      }
-      const target = this.racers.find(r => r.id === event.targetId);
-      if (target) {
-        this.callbacks.onCombatEvent(`💣 ${target.name} sõitis miinile otsa!`);
+      // Tell other clients so the target spins even if their projectile sim missed
+      if (event.targetId && this.callbacks.onNetworkHit) {
+        this.callbacks.onNetworkHit({
+          type: event.type,
+          targetId: event.targetId,
+          x: event.x,
+          y: event.y,
+          z: event.z,
+        });
       }
     } else if (event.type === 'boost_pad') {
       soundManager.playTurbo();
@@ -891,6 +890,9 @@ export class ToonCarEngine {
       hasShield: r.hasShield,
       currentItem: r.currentItem,
       finished: r.finished,
+      spinTimer: r.spinTimer,
+      frozenTimer: r.frozenTimer,
+      starTimer: r.starTimer,
       trackT: r.trackT,
       centerlineIndex: r.centerlineIndex,
     };
@@ -930,11 +932,45 @@ export class ToonCarEngine {
     if (typeof state.hasShield === 'boolean') r.hasShield = state.hasShield;
     if (state.currentItem !== undefined) r.currentItem = state.currentItem;
     if (typeof state.finished === 'boolean') r.finished = state.finished;
+    if (typeof state.spinTimer === 'number') r.spinTimer = Math.max(r.spinTimer || 0, state.spinTimer);
+    if (typeof state.frozenTimer === 'number') r.frozenTimer = Math.max(r.frozenTimer || 0, state.frozenTimer);
+    if (typeof state.starTimer === 'number') r.starTimer = state.starTimer;
     if (typeof state.trackT === 'number') r.trackT = state.trackT;
     if (typeof state.centerlineIndex === 'number') r.centerlineIndex = state.centerlineIndex;
   }
 
   /** Spawn projectile/trap from another client */
+  public applyNetworkHit(hit: { type: string; targetId: string; x?: number; y?: number; z?: number }) {
+    if (!hit || !hit.targetId) return;
+    const t = this.racers.find(r => r.id === hit.targetId);
+    if (!t) return;
+    // Don't re-apply if already spinning hard from local sim
+    if (t.spinTimer > 1.0) return;
+    if (t.starTimer > 0) return;
+    if (t.hasShield) {
+      t.hasShield = false;
+      t.shieldTimer = 0;
+      return;
+    }
+    if (hit.type === 'banana_hit') {
+      t.spinTimer = Math.max(t.spinTimer, 1.2);
+      t.speed *= 0.45;
+    } else if (hit.type === 'thundercloud_strike') {
+      t.spinTimer = Math.max(t.spinTimer, 1.6);
+      t.speed *= 0.2;
+      t.frozenTimer = Math.max(t.frozenTimer || 0, 1.5);
+    } else {
+      t.spinTimer = Math.max(t.spinTimer, 1.8);
+      t.speed *= 0.12;
+    }
+    if (hit.targetId === this.localPlayerId) {
+      this.cameraShake = Math.max(this.cameraShake, 0.9);
+    }
+    if (hit.x !== undefined) {
+      this.particles.emitExplosion(hit.x, hit.y || t.y, hit.z || t.z);
+    }
+  }
+
   public applyNetworkProjectile(p: any) {
     if (!p || !p.id) return;
     if (this.projectiles.some(x => x.id === p.id)) return;
@@ -1175,12 +1211,9 @@ export class ToonCarEngine {
 
     // Multiplayer: broadcast newest projectiles spawned by local player
     if (racer.id === this.localPlayerId && this.callbacks.onProjectileSpawn) {
-      const mine = this.projectiles.filter(
-        p => p.active && p.ownerId === racer.id
-      );
-      // Send the most recent ones (last 1–3)
-      const fresh = mine.slice(-3);
-      for (const p of fresh) {
+      const mine = this.projectiles.filter(p => p.active && p.ownerId === racer.id);
+      const p = mine[mine.length - 1];
+      if (p) {
         this.callbacks.onProjectileSpawn({
           id: p.id,
           type: p.type,
