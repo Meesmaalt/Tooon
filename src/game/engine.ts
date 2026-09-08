@@ -446,20 +446,23 @@ export class ToonCarEngine {
     this.scene.add(meshContainer.root);
     this.carMeshes.set(state.id, meshContainer);
 
-    // Soft drop shadow beneath car
+    // Soft drop shadow — parented to car (no world-space y flicker / z-fight)
     const shadowGeo = new THREE.PlaneGeometry(2.2, 3.2);
     shadowGeo.rotateX(-Math.PI / 2);
     const shadowMat = new THREE.MeshBasicMaterial({
       color: 0x000000,
       transparent: true,
-      opacity: 0.35,
+      opacity: 0.30,
       depthWrite: false,
+      depthTest: true,
+      polygonOffset: true,
+      polygonOffsetFactor: -4,
+      polygonOffsetUnits: -4,
     });
     const shadowMesh = new THREE.Mesh(shadowGeo, shadowMat);
-    shadowMesh.position.set(state.x, state.y + 0.04, state.z);
-    shadowMesh.rotation.y = state.rotY;
-    shadowMesh.renderOrder = 0;
-    this.scene.add(shadowMesh);
+    shadowMesh.position.set(0, 0.07, 0);
+    shadowMesh.renderOrder = -1;
+    meshContainer.root.add(shadowMesh);
     this.shadowMeshes.set(state.id, shadowMesh);
 
     // Shield mesh
@@ -1160,12 +1163,7 @@ export class ToonCarEngine {
       meshContainer.driverHead.rotation.z = -racer.steerAngle * 0.3;
       meshContainer.driverHead.position.y = 0.95;
 
-      // Update Car Shadow position and yaw
-      const shadow = this.shadowMeshes.get(racer.id);
-      if (shadow) {
-        shadow.position.set(racer.x, racer.y + 0.04, racer.z);
-        shadow.rotation.y = racer.rotY;
-      }
+      // Shadow is parented under car root — no per-frame world update (stops flicker)
 
       // Chassis dynamic lean & pitch
       meshContainer.bodyGroup.rotation.x = racer.rotX || 0;

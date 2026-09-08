@@ -258,29 +258,32 @@ export function updateRacerPhysics(
     }
   }
 
-  // Outer track boundary collision (soft barrier bounce)
-  if (trackInfo.isWallHit) {
-    const maxPlayableRadius = (track.trackWidth * 0.5) + 10.0;
-    const excess = trackInfo.distanceToCenter - maxPlayableRadius;
-
-    if (excess > 0) {
-      // Gently push car back toward track centerline without sudden teleportation
-      racer.x += trackInfo.wallNormal.x * Math.min(excess, 0.4);
-      racer.z += trackInfo.wallNormal.z * Math.min(excess, 0.4);
-
-      // Dampen velocity
-      racer.speed *= 0.88;
-
-      if (Math.abs(racer.speed) > 18) {
-        if (onCollision) {
-          onCollision({
-            type: 'wall_hit',
-            racerId: racer.id,
-            x: racer.x,
-            y: racer.y,
-            z: racer.z,
-          });
-        }
+  // HARD outer boundary — cannot drive into mountains/void
+  // Playable: road + curb + thin shoulder. Beyond that: full correction every tick.
+  {
+    const half = track.trackWidth * 0.5;
+    const hardMax = half + 5.5; // ~16.5m from centerline
+    const softMax = half + 3.2; // start slowing a bit earlier
+    const dist = trackInfo.distanceToCenter;
+    if (dist > softMax) {
+      const excess = dist - softMax;
+      // Progressive drag when leaving the road corridor
+      racer.speed *= Math.max(0.55, 1.0 - excess * 0.08);
+    }
+    if (dist > hardMax) {
+      const excess = dist - hardMax;
+      // Full push back onto playable area (not a 0.4m drip)
+      racer.x += trackInfo.wallNormal.x * excess;
+      racer.z += trackInfo.wallNormal.z * excess;
+      racer.speed *= 0.72;
+      if (Math.abs(racer.speed) > 12 && onCollision) {
+        onCollision({
+          type: 'wall_hit',
+          racerId: racer.id,
+          x: racer.x,
+          y: racer.y,
+          z: racer.z,
+        });
       }
     }
   }
@@ -337,18 +340,12 @@ export function updateRacerPhysics(
     }
 
     if (bestBox) {
-      // Clear WHOLE station (all boxes near this one) — one car, one grant
-      for (const other of track.itemBoxes) {
-        if (!other.active) continue;
-        const near = Math.hypot(other.x - bestBox.x, other.z - bestBox.z);
-        if (near < 14) {
-          other.active = false;
-          other.respawnTime = 6;
-          other.mesh.visible = false;
-        }
-      }
-      // Lock out further pickups until item is used + short extra cooldown after use is separate
-      racer.itemBoxCooldown = 5.0;
+      // Only THIS box disappears — other cars can still take the other two
+      bestBox.active = false;
+      bestBox.respawnTime = 7;
+      bestBox.mesh.visible = false;
+      // Car still cannot pick a second item while holding one (currentItem check above)
+      racer.itemBoxCooldown = 1.2; // brief anti-double-tap if clipping two boxes same frame
       racer.currentItem = getRandomPowerUp(Math.max(1, racer.position || 1), 6);
 
       if (onCollision) {

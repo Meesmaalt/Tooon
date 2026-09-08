@@ -1425,6 +1425,46 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   // Track surface sectors for dynamic terrain transitions
   const sectors = getTrackSectors(trackDef.theme);
 
+  // Alternate shortcut corridors (dirt/sand/ice beside main asphalt)
+  type ShortcutZone = {
+    startT: number; endT: number; side: -1 | 0 | 1;
+    extraWidth: number; surface: string; name: string; icon: string;
+  };
+  const shortcutZones: ShortcutZone[] = (() => {
+    switch (trackDef.theme) {
+      case 'beach':
+        return [
+          { startT: 0.20, endT: 0.32, side: -1, extraWidth: 16, surface: 'sand', name: 'Liivaranna Lühitee', icon: '🏖️' },
+          { startT: 0.55, endT: 0.68, side: 1, extraWidth: 15, surface: 'dirt', name: 'Kaljukoridori Cut', icon: '🪨' },
+        ];
+      case 'spooky':
+        return [
+          { startT: 0.30, endT: 0.42, side: 1, extraWidth: 15, surface: 'dirt', name: 'Kalmistu Lühitee', icon: '🪦' },
+          { startT: 0.62, endT: 0.74, side: -1, extraWidth: 14, surface: 'wood', name: 'Saladuslik Sild', icon: '🪵' },
+        ];
+      case 'cyber':
+        return [
+          { startT: 0.25, endT: 0.38, side: -1, extraWidth: 15, surface: 'cyber_grid', name: 'Holo-Cut', icon: '🌀' },
+          { startT: 0.60, endT: 0.72, side: 1, extraWidth: 14, surface: 'glass', name: 'Klaasriba', icon: '💎' },
+        ];
+      case 'ice':
+        return [
+          { startT: 0.22, endT: 0.36, side: 1, extraWidth: 16, surface: 'ice', name: 'Libe Lühitee', icon: '⛸️' },
+          { startT: 0.58, endT: 0.70, side: -1, extraWidth: 14, surface: 'dirt', name: 'Lumekoridor', icon: '❄️' },
+        ];
+      case 'volcano':
+        return [
+          { startT: 0.28, endT: 0.40, side: -1, extraWidth: 15, surface: 'magma_rock', name: 'Laavakivi Cut', icon: '🔥' },
+          { startT: 0.64, endT: 0.76, side: 1, extraWidth: 14, surface: 'dirt', name: 'Tuharada', icon: '🌋' },
+        ];
+      default:
+        return [
+          { startT: 0.30, endT: 0.42, side: 1, extraWidth: 15, surface: 'dirt', name: 'Lühitee', icon: '🛤️' },
+        ];
+    }
+  })();
+
+
   // Build dense centerline (720 points along spline) for accurate physics on long multi-level tracks
   const denseCount = 320;
   const centerlinePoints: CenterlinePoint[] = [];
@@ -1583,17 +1623,37 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     const signedDistance = _tmpToCar.dot(_resRight);
     _resWallNormal.copy(_resRight).multiplyScalar(signedDistance > 0 ? -1 : 1);
 
-    // Zone boundaries:
-    // 0 to halfW (11.0m): On Main Road
-    // 11.0m to 13.4m: On Curbs
-    // 13.4m to 22.0m: Offroad grass/sand/snow/shoulder (smooth drag, turbo bypasses)
-    // > 22.0m: Outer perimeter boundary (soft pushback, providing a wide 44m corridor!)
-    const isOnCurb = distToCenter > halfW && distToCenter <= halfW + curbW;
-    const isOffroad = distToCenter > halfW + curbW && distToCenter <= halfW + 11.0;
-    const isWallHit = distToCenter > halfW + 11.0;
+    // Zone boundaries (tighter — mountains are not a playground)
+    // road | curb | short shoulder | HARD WALL
+    let isOnCurb = distToCenter > halfW && distToCenter <= halfW + curbW;
+    let isOffroad = distToCenter > halfW + curbW && distToCenter <= halfW + 5.5;
+    let isWallHit = distToCenter > halfW + 5.5;
 
     // Detect surface sector at current position along curve
-    const activeSector = sectors.find(sec => finalT >= sec.startT && finalT < sec.endT) || sectors[0];
+    let activeSector = sectors.find(sec => finalT >= sec.startT && finalT < sec.endT) || sectors[0];
+    let surface = activeSector.surface;
+    let surfaceName = activeSector.name;
+    let surfaceIcon = activeSector.icon;
+
+    // --- Shortcuts: alternate corridors (dirt/sand/ice) beside the main road ---
+    for (const sc of shortcutZones) {
+      if (finalT >= sc.startT && finalT < sc.endT) {
+        const onSide =
+          (sc.side > 0 && signedDistance > 0) ||
+          (sc.side < 0 && signedDistance < 0) ||
+          sc.side === 0;
+        if (onSide && distToCenter <= halfW + sc.extraWidth) {
+          // Treat as driveable shortcut surface (not a wall)
+          isWallHit = false;
+          isOffroad = distToCenter > halfW + 1.5;
+          isOnCurb = false;
+          surface = sc.surface;
+          surfaceName = sc.name;
+          surfaceIcon = sc.icon;
+        }
+        break;
+      }
+    }
 
     _cachedTrackInfo.distanceToCenter = distToCenter;
     _cachedTrackInfo.signedDistance = signedDistance;
@@ -1602,9 +1662,9 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     _cachedTrackInfo.isOffroad = isOffroad;
     _cachedTrackInfo.isOnCurb = isOnCurb;
     _cachedTrackInfo.isWallHit = isWallHit;
-    _cachedTrackInfo.surface = activeSector.surface;
-    _cachedTrackInfo.surfaceName = activeSector.name;
-    _cachedTrackInfo.surfaceIcon = activeSector.icon;
+    _cachedTrackInfo.surface = surface;
+    _cachedTrackInfo.surfaceName = surfaceName;
+    _cachedTrackInfo.surfaceIcon = surfaceIcon;
 
     return _cachedTrackInfo;
   };
@@ -3160,7 +3220,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
         roughness: 0.3,
       });
 
-      // Left guard rail (placed with generous clearance at halfW + curbW + 2.0m)
+      // Left guard rail (placed with generous clearance at halfW + curbW + 1.2m)
       const leftWall = new THREE.Mesh(railGeo, railMat);
       leftWall.position.copy(pt).add(right.clone().multiplyScalar(-halfW - curbW - 2.0));
       leftWall.position.y += 0.55;
@@ -3169,10 +3229,49 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
 
       // Right guard rail
       const rightWall = new THREE.Mesh(railGeo, railMat);
-      rightWall.position.copy(pt).add(right.clone().multiplyScalar(halfW + curbW + 2.0));
+      rightWall.position.copy(pt).add(right.clone().multiplyScalar(halfW + curbW + 1.2));
       rightWall.position.y += 0.55;
       rightWall.rotation.y = rotY;
       wallsGroup.add(rightWall);
+    }
+  }
+
+
+  // Visual shortcut path strips (non-asphalt alternate routes)
+  {
+    const dirtMat = new THREE.MeshLambertMaterial({ color: 0xa16207 });
+    const sandMat = new THREE.MeshLambertMaterial({ color: 0xfde68a });
+    const iceMat = new THREE.MeshLambertMaterial({ color: 0xbae6fd });
+    const magmaMat = new THREE.MeshLambertMaterial({ color: 0x7f1d1d });
+    const cyberMat = new THREE.MeshLambertMaterial({ color: 0x083344 });
+    const matFor = (s: string) => {
+      if (s === 'sand') return sandMat;
+      if (s === 'ice') return iceMat;
+      if (s === 'magma_rock') return magmaMat;
+      if (s === 'cyber_grid' || s === 'glass') return cyberMat;
+      return dirtMat;
+    };
+    for (const sc of shortcutZones) {
+      const samples = 14;
+      for (let i = 0; i < samples; i++) {
+        const t = sc.startT + (sc.endT - sc.startT) * (i / samples);
+        const idx = Math.floor(t * denseCount) % denseCount;
+        const cp = centerlinePoints[idx];
+        const side = sc.side === 0 ? 1 : sc.side;
+        const strip = new THREE.Mesh(
+          new THREE.PlaneGeometry(sc.extraWidth * 0.85, 9),
+          matFor(sc.surface)
+        );
+        strip.rotation.x = -Math.PI / 2;
+        const off = halfW + sc.extraWidth * 0.45;
+        strip.position.copy(cp.point).add(cp.right.clone().multiplyScalar(side * off));
+        strip.position.y = cp.point.y + 0.04;
+        strip.rotation.z = Math.atan2(cp.tangent.x, cp.tangent.z);
+        // PlaneGeometry is XZ after rot X - adjust yaw
+        strip.rotation.y = Math.atan2(cp.tangent.x, cp.tangent.z);
+        strip.receiveShadow = true;
+        decorations.add(strip);
+      }
     }
   }
 
