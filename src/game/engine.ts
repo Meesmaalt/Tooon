@@ -596,9 +596,13 @@ export class ToonCarEngine {
         }
       }
 
-      // Remote human players: driven by network snapshots, not local physics
+      // Remote human players: network authority + light coasting between packets
       if (isRemoteHuman) {
-        // light visual-only integration already applied via applyRemoteState
+        if (canDrive && !racer.finished && Math.abs(racer.speed) > 0.5) {
+          const step = racer.speed * dt * 0.85;
+          racer.x += Math.sin(racer.rotY) * step;
+          racer.z += Math.cos(racer.rotY) * step;
+        }
         return;
       }
 
@@ -903,17 +907,17 @@ export class ToonCarEngine {
     const dx = (state.x ?? r.x) - r.x;
     const dz = (state.z ?? r.z) - r.z;
     const dist = Math.hypot(dx, dz);
-    const alpha = dist > 12 ? 1 : 0.55;
+    // Smoother follow — less jitter at 30 Hz
+    const alpha = dist > 18 ? 1 : dist > 6 ? 0.45 : 0.28;
 
     if (typeof state.x === 'number') r.x += (state.x - r.x) * alpha;
     if (typeof state.y === 'number') r.y += (state.y - r.y) * alpha;
     if (typeof state.z === 'number') r.z += (state.z - r.z) * alpha;
     if (typeof state.rotY === 'number') {
-      // shortest-path yaw lerp
       let dYaw = state.rotY - r.rotY;
       while (dYaw > Math.PI) dYaw -= Math.PI * 2;
       while (dYaw < -Math.PI) dYaw += Math.PI * 2;
-      r.rotY += dYaw * alpha;
+      r.rotY += dYaw * Math.min(1, alpha + 0.15);
     }
     if (typeof state.speed === 'number') r.speed = state.speed;
     if (typeof state.steerAngle === 'number') r.steerAngle = state.steerAngle;
@@ -928,6 +932,29 @@ export class ToonCarEngine {
     if (typeof state.finished === 'boolean') r.finished = state.finished;
     if (typeof state.trackT === 'number') r.trackT = state.trackT;
     if (typeof state.centerlineIndex === 'number') r.centerlineIndex = state.centerlineIndex;
+  }
+
+  /** Spawn projectile/trap from another client */
+  public applyNetworkProjectile(p: any) {
+    if (!p || !p.id) return;
+    if (this.projectiles.some(x => x.id === p.id)) return;
+    this.projectiles.push({
+      id: p.id,
+      type: p.type,
+      ownerId: p.ownerId,
+      x: p.x,
+      y: p.y,
+      z: p.z,
+      vx: p.vx || 0,
+      vy: p.vy || 0,
+      vz: p.vz || 0,
+      life: p.life ?? 10,
+      active: true,
+      targetId: p.targetId,
+      state: p.state,
+      timer: p.timer,
+    });
+    this.ensureProjectileMesh(this.projectiles[this.projectiles.length - 1]);
   }
 
   public firePowerUp(racer: RacerState) {
@@ -1144,6 +1171,32 @@ export class ToonCarEngine {
     // Spawn meshes immediately so rockets are visible the same frame
     for (const p of this.projectiles) {
       if (p.active) this.ensureProjectileMesh(p);
+    }
+
+    // Multiplayer: broadcast newest projectiles spawned by local player
+    if (racer.id === this.localPlayerId && this.callbacks.onProjectileSpawn) {
+      const mine = this.projectiles.filter(
+        p => p.active && p.ownerId === racer.id
+      );
+      // Send the most recent ones (last 1–3)
+      const fresh = mine.slice(-3);
+      for (const p of fresh) {
+        this.callbacks.onProjectileSpawn({
+          id: p.id,
+          type: p.type,
+          ownerId: p.ownerId,
+          x: p.x,
+          y: p.y,
+          z: p.z,
+          vx: p.vx,
+          vy: p.vy,
+          vz: p.vz,
+          life: p.life,
+          targetId: p.targetId,
+          state: p.state,
+          timer: p.timer,
+        });
+      }
     }
   }
 

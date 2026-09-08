@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiUrl, wsUrl } from './net';
 import { ToonCarEngine } from './game/engine';
 import { CAR_DEFINITIONS } from './game/cars';
 import { TRACK_DEFINITIONS } from './game/tracks';
@@ -11,6 +12,8 @@ import { LeaderboardModal } from './components/LeaderboardModal';
 import { ControlsHelpModal } from './components/ControlsHelpModal';
 import { soundManager } from './audio/soundManager';
 import { Play, Users, Car, HelpCircle, Trophy, Sparkles, Volume2, Timer } from 'lucide-react';
+
+
 
 type ScreenState = 'menu' | 'car_select' | 'track_select' | 'lobby' | 'racing' | 'results';
 
@@ -77,9 +80,7 @@ export default function App() {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}`;
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(wsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -155,6 +156,15 @@ export default function App() {
             eng.applyRemoteState(msg.state);
           } catch (e) {
             console.warn('applyRemoteState failed', e);
+          }
+        } else if (msg.type === 'fire_powerup' && msg.projectile) {
+          const eng = engineRef.current;
+          if (!eng) return;
+          if (msg.racerId === myPlayerIdRef.current) return;
+          try {
+            eng.applyNetworkProjectile(msg.projectile);
+          } catch (e) {
+            console.warn('applyNetworkProjectile failed', e);
           }
         }
       } catch (err) {
@@ -321,6 +331,15 @@ export default function App() {
         onCountdownTick: (val) => {
           setCountdownText(val);
         },
+        onProjectileSpawn: (projectile) => {
+          const ws = wsRef.current;
+          if (!isMultiplayer || !ws || ws.readyState !== WebSocket.OPEN) return;
+          ws.send(JSON.stringify({
+            type: 'fire_powerup',
+            racerId: myPlayerIdRef.current,
+            projectile,
+          }));
+        },
       },
       isMultiplayer
         ? multiplayerRacers
@@ -423,7 +442,7 @@ export default function App() {
   };
 
   const handleCreateRoom = (name: string, trackId: string, laps: number, maxPlayers: number) => {
-    fetch('/api/rooms', {
+    fetch(apiUrl('api/rooms'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, trackId, laps, maxPlayers }),

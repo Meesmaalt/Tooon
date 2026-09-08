@@ -1444,6 +1444,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
         return [
           { startT: 0.20, endT: 0.32, side: -1, extraWidth: 16, surface: 'sand', name: 'Liivaranna Lühitee', icon: '🏖️' },
           { startT: 0.55, endT: 0.68, side: 1, extraWidth: 15, surface: 'dirt', name: 'Kaljukoridori Cut', icon: '🪨' },
+          { startT: 0.78, endT: 0.88, side: -1, extraWidth: 14, surface: 'wood', name: 'Rannapromenaadi Lõige', icon: '🪵' },
         ];
       case 'spooky':
         return [
@@ -3254,7 +3255,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     const poleGeo = new THREE.CylinderGeometry(0.12, 0.18, 4.5, 6);
     const flagGeo = new THREE.BoxGeometry(1.8, 1.0, 0.08);
     const rockGeo = new THREE.DodecahedronGeometry(0.9, 0);
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 28; i++) {
       const t = (i + 0.5) / 20;
       const idx = Math.floor(t * denseCount) % denseCount;
       const cp = centerlinePoints[idx];

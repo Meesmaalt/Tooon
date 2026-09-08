@@ -12,6 +12,10 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 # Copy application source
 COPY . .
 
+# Optional: docker build --build-arg VITE_BASE_PATH=/ralli/
+ARG VITE_BASE_PATH=./
+ENV VITE_BASE_PATH=$VITE_BASE_PATH
+
 # Build Vite frontend and compile Express+WebSocket backend bundle
 RUN npm run build
 

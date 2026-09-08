@@ -1,3 +1,4 @@
+import { apiUrl } from '../net';
 import React, { useState, useEffect } from 'react';
 import { RoomInfo, RoomPlayer } from '../types';
 import { TRACK_DEFINITIONS } from '../game/tracks';
@@ -49,7 +50,7 @@ export const Lobby: React.FC<LobbyProps> = ({
   const fetchRooms = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/rooms');
+      const res = await fetch(apiUrl('api/rooms'));
       if (res.ok) {
         const data = await res.json();
         setRooms(data);

@@ -28,6 +28,18 @@ const PORT = 3000;
 const app = express();
 app.use(express.json());
 
+// Optional public path prefix (e.g. /ralli) when reverse-proxy does NOT strip it
+const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/$/, '');
+if (BASE_PATH) {
+  app.use((req, _res, next) => {
+    if (req.url.startsWith(BASE_PATH + '/') || req.url === BASE_PATH) {
+      req.url = req.url.slice(BASE_PATH.length) || '/';
+    }
+    next();
+  });
+}
+
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 

@@ -10,6 +10,10 @@ services:
     ports:
       - "3001:3000"
     environment:
+      # Subpath deploy example: VITE_BASE_PATH=/ralli/ and BASE_PATH=/ralli
+      # Leave empty for root (http://ip:port/)
+      VITE_BASE_PATH: ${VITE_BASE_PATH:-./}
+      BASE_PATH: ${BASE_PATH:-}
       - NODE_ENV=production
       - PORT=3000
     healthcheck:

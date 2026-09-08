@@ -1,10 +1,16 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import { defineConfig } from 'vite';
 
+// VITE_BASE_PATH examples:
+//   unset or "/"  → root deploy (http://ip:3000/)
+//   "/ralli/"      → https://domain/ralli/
+//   "./"           → relative assets (works under most reverse-proxy subpaths)
 export default defineConfig(() => {
+  const base = process.env.VITE_BASE_PATH || './';
   return {
+    base,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
@@ -12,10 +18,7 @@ export default defineConfig(() => {
       },
     },
     server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },
   };
