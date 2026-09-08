@@ -596,9 +596,16 @@ export class ToonCarEngine {
         }
       }
 
-      // Remote human players: network authority + light coasting between packets
+      // Remote human players: network authority + coast + local hit reactions
       if (isRemoteHuman) {
-        if (canDrive && !racer.finished && Math.abs(racer.speed) > 0.5) {
+        if (racer.spinTimer > 0) {
+          racer.spinTimer -= dt;
+          racer.rotY += Math.PI * 5 * dt;
+          racer.speed = Math.max(0, racer.speed - 24 * dt);
+        } else if (racer.frozenTimer > 0) {
+          racer.frozenTimer -= dt;
+          racer.speed *= 0.92;
+        } else if (canDrive && !racer.finished && Math.abs(racer.speed) > 0.5) {
           const step = racer.speed * dt * 0.85;
           racer.x += Math.sin(racer.rotY) * step;
           racer.z += Math.cos(racer.rotY) * step;
@@ -808,7 +815,6 @@ export class ToonCarEngine {
       this.particles.emitBoxBreak(event.x, event.y, event.z);
       const racer = this.racers.find(r => r.id === event.racerId);
       if (racer) {
-        // Hold item until player/AI presses use — short lock so held keys don't dump instantly
         this.itemArmTimers.set(racer.id, 0.5);
         if (racer.isAI) {
           const ctrl = this.aiControllers.get(racer.id);
@@ -818,6 +824,15 @@ export class ToonCarEngine {
           const info = POWER_UPS[racer.currentItem];
           const label = info ? `${info.icon} ${info.name}` : racer.currentItem;
           this.callbacks.onCombatEvent(`🎁 Said: ${label}!  →  vajuta E`);
+        }
+        // Multiplayer: hide this box for everyone
+        if (racer.id === this.localPlayerId && this.callbacks.onItemBoxTaken) {
+          this.callbacks.onItemBoxTaken({
+            x: event.x,
+            y: event.y,
+            z: event.z,
+            racerId: racer.id,
+          });
         }
       }
     } else if (event.type === 'rocket_hit' || event.type === 'blue_rocket_hit' || event.type === 'thundercloud_strike' || event.type === 'banana_hit' || event.type === 'mine_hit') {
@@ -849,15 +864,19 @@ export class ToonCarEngine {
           try { this.registerHitStreak(); } catch (_) { /* ignore */ }
         }
       }
-      // Tell other clients so the target spins even if their projectile sim missed
+      // Broadcast hit so every client applies reaction (esp. target)
       if (event.targetId && this.callbacks.onNetworkHit) {
-        this.callbacks.onNetworkHit({
-          type: event.type,
-          targetId: event.targetId,
-          x: event.x,
-          y: event.y,
-          z: event.z,
-        });
+        const attackerId = event.racerId;
+        // Prefer attacker client as authority; also allow if target is remote on our screen
+        if (attackerId === this.localPlayerId || event.targetId !== this.localPlayerId) {
+          this.callbacks.onNetworkHit({
+            type: event.type,
+            targetId: event.targetId,
+            x: event.x,
+            y: event.y,
+            z: event.z,
+          });
+        }
       }
     } else if (event.type === 'boost_pad') {
       soundManager.playTurbo();
@@ -940,34 +959,57 @@ export class ToonCarEngine {
   }
 
   /** Spawn projectile/trap from another client */
+  public applyItemBoxTaken(data: { x: number; y: number; z: number; racerId?: string }) {
+    if (!data) return;
+    let best: (typeof this.trackData.itemBoxes)[0] | null = null;
+    let bestD = 8 * 8;
+    for (const box of this.trackData.itemBoxes) {
+      if (!box.active) continue;
+      const d = (box.x - data.x) ** 2 + (box.z - data.z) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = box;
+      }
+    }
+    if (best) {
+      best.active = false;
+      best.respawnTime = 7;
+      best.mesh.visible = false;
+      this.particles.emitBoxBreak(best.x, best.y, best.z);
+      soundManager.playItemBox();
+    }
+  }
+
   public applyNetworkHit(hit: { type: string; targetId: string; x?: number; y?: number; z?: number }) {
     if (!hit || !hit.targetId) return;
     const t = this.racers.find(r => r.id === hit.targetId);
     if (!t) return;
-    // Don't re-apply if already spinning hard from local sim
-    if (t.spinTimer > 1.0) return;
     if (t.starTimer > 0) return;
     if (t.hasShield) {
       t.hasShield = false;
       t.shieldTimer = 0;
+      soundManager.playShield();
       return;
     }
+    // Always refresh hit reaction (multiplayer can miss local projectile sim)
     if (hit.type === 'banana_hit') {
-      t.spinTimer = Math.max(t.spinTimer, 1.2);
-      t.speed *= 0.45;
+      t.spinTimer = Math.max(t.spinTimer, 1.4);
+      t.speed = Math.min(t.speed, t.speed * 0.45);
     } else if (hit.type === 'thundercloud_strike') {
-      t.spinTimer = Math.max(t.spinTimer, 1.6);
-      t.speed *= 0.2;
-      t.frozenTimer = Math.max(t.frozenTimer || 0, 1.5);
-    } else {
       t.spinTimer = Math.max(t.spinTimer, 1.8);
-      t.speed *= 0.12;
+      t.speed = Math.min(t.speed * 0.2, 12);
+      t.frozenTimer = Math.max(t.frozenTimer || 0, 2.0);
+    } else {
+      t.spinTimer = Math.max(t.spinTimer, 2.0);
+      t.speed = Math.min(t.speed * 0.12, 8);
     }
     if (hit.targetId === this.localPlayerId) {
-      this.cameraShake = Math.max(this.cameraShake, 0.9);
+      this.cameraShake = Math.max(this.cameraShake, 1.0);
+      this.callbacks.onCombatEvent('💥 Sind tabati!');
     }
     if (hit.x !== undefined) {
-      this.particles.emitExplosion(hit.x, hit.y || t.y, hit.z || t.z);
+      this.particles.emitExplosion(hit.x, hit.y || t.y + 0.5, hit.z || t.z);
+      soundManager.playExplosion();
     }
   }
 

@@ -174,6 +174,15 @@ export default function App() {
           } catch (e) {
             console.warn('applyNetworkHit failed', e);
           }
+        } else if (msg.type === 'item_box_taken' && msg.data) {
+          const eng = engineRef.current;
+          if (!eng) return;
+          if (msg.data.racerId === myPlayerIdRef.current) return;
+          try {
+            eng.applyItemBoxTaken(msg.data);
+          } catch (e) {
+            console.warn('applyItemBoxTaken failed', e);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -355,6 +364,13 @@ export default function App() {
           if (!ws || ws.readyState !== WebSocket.OPEN) return;
           try {
             ws.send(JSON.stringify({ type: 'combat_hit', hit }));
+          } catch (_) {}
+        },
+        onItemBoxTaken: (data) => {
+          const ws = wsRef.current;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          try {
+            ws.send(JSON.stringify({ type: 'item_box_taken', data }));
           } catch (_) {}
         },
       },
