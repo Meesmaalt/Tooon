@@ -274,7 +274,23 @@ wss.on('connection', (ws) => {
           broadcastToRoom(currentRoomId, {
             type: 'fire_powerup',
             powerup: msg.powerup,
-            racerId: currentPlayerId,
+            racerId: currentPlayerId || msg.racerId,
+            projectile: msg.projectile || null,
+          }, ws);
+        }
+      } else if (msg.type === 'combat_hit') {
+        if (currentRoomId && msg.hit) {
+          broadcastToRoom(currentRoomId, {
+            type: 'combat_hit',
+            hit: msg.hit,
+            fromId: currentPlayerId,
+          }, ws);
+        }
+      } else if (msg.type === 'item_box_taken') {
+        if (currentRoomId && msg.data) {
+          broadcastToRoom(currentRoomId, {
+            type: 'item_box_taken',
+            data: msg.data,
           }, ws);
         }
       } else if (msg.type === 'leave_room') {

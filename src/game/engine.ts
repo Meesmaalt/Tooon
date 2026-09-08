@@ -892,6 +892,29 @@ export class ToonCarEngine {
   public getLocalSyncState() {
     const r = this.racers.find(x => x.id === this.localPlayerId);
     if (!r) return null;
+    // Inactive box indices — other clients hide the same boxes
+    const inactiveBoxes: number[] = [];
+    this.trackData.itemBoxes.forEach((b, i) => {
+      if (!b.active) inactiveBoxes.push(i);
+    });
+    // Projectiles we own — continuous resync so one dropped packet doesn't hide them
+    const myProjectiles = this.projectiles
+      .filter(p => p.active && p.ownerId === this.localPlayerId)
+      .map(p => ({
+        id: p.id,
+        type: p.type,
+        ownerId: p.ownerId,
+        x: p.x,
+        y: p.y,
+        z: p.z,
+        vx: p.vx,
+        vy: p.vy,
+        vz: p.vz,
+        life: p.life,
+        targetId: p.targetId,
+        state: p.state,
+        timer: p.timer,
+      }));
     return {
       id: r.id,
       x: r.x,
@@ -914,6 +937,8 @@ export class ToonCarEngine {
       starTimer: r.starTimer,
       trackT: r.trackT,
       centerlineIndex: r.centerlineIndex,
+      inactiveBoxes,
+      projectiles: myProjectiles,
     };
   }
 
@@ -956,6 +981,38 @@ export class ToonCarEngine {
     if (typeof state.starTimer === 'number') r.starTimer = state.starTimer;
     if (typeof state.trackT === 'number') r.trackT = state.trackT;
     if (typeof state.centerlineIndex === 'number') r.centerlineIndex = state.centerlineIndex;
+
+    // World: hide boxes the other player already took
+    if (Array.isArray(state.inactiveBoxes)) {
+      for (const idx of state.inactiveBoxes) {
+        const box = this.trackData.itemBoxes[idx];
+        if (box && box.active) {
+          box.active = false;
+          box.respawnTime = Math.max(box.respawnTime || 0, 7);
+          box.mesh.visible = false;
+        }
+      }
+    }
+    // World: ensure their projectiles exist on our client
+    if (Array.isArray(state.projectiles)) {
+      for (const p of state.projectiles) {
+        this.applyNetworkProjectile(p);
+        // Update position of existing projectile owned by them
+        const existing = this.projectiles.find(x => x.id === p.id);
+        if (existing && existing.ownerId !== this.localPlayerId) {
+          existing.x = p.x;
+          existing.y = p.y;
+          existing.z = p.z;
+          existing.vx = p.vx ?? existing.vx;
+          existing.vy = p.vy ?? existing.vy;
+          existing.vz = p.vz ?? existing.vz;
+          existing.life = p.life ?? existing.life;
+          existing.state = p.state ?? existing.state;
+          existing.timer = p.timer ?? existing.timer;
+          existing.active = true;
+        }
+      }
+    }
   }
 
   /** Spawn projectile/trap from another client */
@@ -991,25 +1048,26 @@ export class ToonCarEngine {
       soundManager.playShield();
       return;
     }
-    // Always refresh hit reaction (multiplayer can miss local projectile sim)
+    const isLocalVictim = hit.targetId === this.localPlayerId;
     if (hit.type === 'banana_hit') {
-      t.spinTimer = Math.max(t.spinTimer, 1.4);
-      t.speed = Math.min(t.speed, t.speed * 0.45);
+      t.spinTimer = Math.max(t.spinTimer, isLocalVictim ? 1.8 : 1.4);
+      t.speed = Math.min(t.speed * 0.4, 18);
     } else if (hit.type === 'thundercloud_strike') {
-      t.spinTimer = Math.max(t.spinTimer, 1.8);
-      t.speed = Math.min(t.speed * 0.2, 12);
-      t.frozenTimer = Math.max(t.frozenTimer || 0, 2.0);
-    } else {
       t.spinTimer = Math.max(t.spinTimer, 2.0);
-      t.speed = Math.min(t.speed * 0.12, 8);
+      t.speed = Math.min(t.speed * 0.15, 10);
+      t.frozenTimer = Math.max(t.frozenTimer || 0, 2.5);
+    } else {
+      // rocket / mine
+      t.spinTimer = Math.max(t.spinTimer, isLocalVictim ? 2.4 : 2.0);
+      t.speed = Math.min(t.speed * 0.08, 6);
     }
-    if (hit.targetId === this.localPlayerId) {
-      this.cameraShake = Math.max(this.cameraShake, 1.0);
+    if (isLocalVictim) {
+      this.cameraShake = Math.max(this.cameraShake, 1.15);
       this.callbacks.onCombatEvent('💥 Sind tabati!');
+      soundManager.playExplosion();
     }
     if (hit.x !== undefined) {
       this.particles.emitExplosion(hit.x, hit.y || t.y + 0.5, hit.z || t.z);
-      soundManager.playExplosion();
     }
   }
 
