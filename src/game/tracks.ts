@@ -33,16 +33,24 @@ export const TRACK_DEFINITIONS: TrackDefinition[] = [
       [295, 5.5, 375],
       [335, 6.2, 350],
       [370, 7.0, 320],
-      // 3. Kuldranna tagasirge (The Golden Sands Highway - 420m täiskiirusel sirge!)
+      // 3. Kuldranna tagasirge + lainetav tõus
       [410, 8.5, 240],
+      [418, 9.2, 190],
       [425, 10.5, 140],
-      [430, 13.0, 40],
+      [430, 11.8, 90],
+      [432, 13.0, 40],
+      [428, 14.5, -10],
       [425, 16.0, -60],
+      [418, 17.8, -110],
       [410, 19.5, -160],
-      // 4. Tuletorni mäetipp ja panoraamne juuksenõelkurv
+      // 4. Tuletorni mäetipp — teravam juuksenõel
+      [390, 21.5, -205],
       [375, 23.0, -250],
+      [345, 25.0, -290],
       [315, 26.0, -320],
+      [275, 26.8, -340],
       [235, 27.0, -350],
+      [190, 26.8, -348],
       [150, 26.5, -340],
       // 5. Suur puidust rippsild kõrgel üle smaragdrohelise lahe (340m sirge viadukt!)
       [70, 25.0, -310],
@@ -2507,7 +2515,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     }
 
     // Cyber Billboards & Neon Pylons
-    for (let i = 0; i < 22; i++) {
+    for (let i = 0; i < 34; i++) {
       const t = (i / 35) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
@@ -2768,7 +2776,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     decorations.add(waterMesh);
 
     // 2. Futuristic Glass & Steel Sky Towers alongside elevated skyways
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 36; i++) {
       const t = (i / 40) % 1;
       const pt = curve.getPointAt(t);
       const tangent = curve.getTangentAt(t).normalize();
@@ -3236,6 +3244,42 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     }
   }
 
+
+
+  // Extra trackside detail: banner poles + rocks along the route
+  {
+    const poleMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
+    const flagMat = new THREE.MeshLambertMaterial({ color: trackDef.curbColorA });
+    const rockMat = new THREE.MeshLambertMaterial({ color: 0x57534e });
+    const poleGeo = new THREE.CylinderGeometry(0.12, 0.18, 4.5, 6);
+    const flagGeo = new THREE.BoxGeometry(1.8, 1.0, 0.08);
+    const rockGeo = new THREE.DodecahedronGeometry(0.9, 0);
+    for (let i = 0; i < 20; i++) {
+      const t = (i + 0.5) / 20;
+      const idx = Math.floor(t * denseCount) % denseCount;
+      const cp = centerlinePoints[idx];
+      const side = i % 2 === 0 ? 1 : -1;
+      const base = cp.point.clone().add(cp.right.clone().multiplyScalar(side * (halfW + 4.5)));
+      if (isTooCloseToTrack(base, 12)) continue;
+      if (i % 2 === 0) {
+        const pole = new THREE.Mesh(poleGeo, poleMat);
+        pole.position.copy(base);
+        pole.position.y = cp.point.y + 2.2;
+        decorations.add(pole);
+        const flag = new THREE.Mesh(flagGeo, flagMat);
+        flag.position.copy(base);
+        flag.position.y = cp.point.y + 4.0;
+        flag.position.x += side * 0.9;
+        decorations.add(flag);
+      } else {
+        const rock = new THREE.Mesh(rockGeo, rockMat);
+        rock.position.copy(base);
+        rock.position.y = cp.point.y + 0.4;
+        rock.rotation.set(Math.random(), Math.random(), Math.random());
+        decorations.add(rock);
+      }
+    }
+  }
 
   // Visual shortcut path strips (non-asphalt alternate routes)
   {

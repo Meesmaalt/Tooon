@@ -90,20 +90,34 @@ export function updateRacerPhysics(
     speedMultiplier *= 0.58;
   }
 
+  // Handbrake / drift (Space / Shift) — must work even with throttle held
+  const wantsDrift = input.drift && Math.abs(racer.speed) > 5.5;
+  // True handbrake: strong deceleration independent of throttle
+  if (wantsDrift) {
+    const hb = isIceTrack ? 14 : 22; // units/s of speed bleed
+    racer.speed = Math.max(isIceTrack ? 7 : 8.5, racer.speed - hb * dt);
+    // While handbraking, throttle is weak (can't cancel the slide)
+  }
+
   // Acceleration & Braking
   const topSpeed = maxBaseSpeed * speedMultiplier;
-  if (input.throttle > 0) {
+  if (input.throttle > 0 && !wantsDrift) {
     if (racer.speed < topSpeed) {
       racer.speed = Math.min(topSpeed, racer.speed + accelPower * input.throttle * dt);
     } else {
       racer.speed = THREE.MathUtils.lerp(racer.speed, topSpeed, dt * 3.0);
     }
+  } else if (input.throttle > 0 && wantsDrift) {
+    // Feather throttle during drift — maintains slide without killing it
+    racer.speed += accelPower * 0.22 * input.throttle * dt;
   } else if (input.brake > 0) {
-    if (racer.speed > -10) {
-      racer.speed -= accelPower * 1.5 * input.brake * dt;
+    // Foot brake (S / Down) — proper stop, including reverse crawl
+    if (racer.speed > 0.5) {
+      racer.speed = Math.max(0, racer.speed - accelPower * 2.4 * input.brake * dt);
+    } else if (racer.speed > -12) {
+      racer.speed -= accelPower * 1.2 * input.brake * dt;
     }
-  } else {
-    // Natural rolling friction & aerodynamic drag
+  } else if (!wantsDrift) {
     const dragRate = isIceTrack ? 3.8 : 6.8;
     if (racer.speed > 0) {
       racer.speed = Math.max(0, racer.speed - dragRate * dt);
@@ -112,52 +126,53 @@ export function updateRacerPhysics(
     }
   }
 
-  // Drifting mechanic & 3-Tier Mini-Turbo Charging
-  racer.isDrifting = (input.drift || (isIceTrack && Math.abs(input.steer) > 0.85)) && Math.abs(racer.speed) > 7;
+  // Drifting state & 3-Tier Mini-Turbo (charge while sliding + steering)
+  racer.isDrifting = wantsDrift || (isIceTrack && Math.abs(input.steer) > 0.85 && Math.abs(racer.speed) > 7);
   if (racer.isDrifting) {
-    racer.driftFactor = Math.min(1.4, racer.driftFactor + dt * (isIceTrack ? 1.5 : 1.2));
-    racer.driftChargeTime = (racer.driftChargeTime || 0) + dt;
-    // Controlled drift friction
-    racer.speed = Math.max(9, racer.speed - (isIceTrack ? 1.0 : 2.0) * dt);
+    racer.driftFactor = Math.min(1.55, racer.driftFactor + dt * (isIceTrack ? 1.6 : 1.35));
+    // Only charge mini-turbo when actually turning into the drift
+    if (Math.abs(input.steer) > 0.2) {
+      racer.driftChargeTime = (racer.driftChargeTime || 0) + dt;
+    } else {
+      racer.driftChargeTime = (racer.driftChargeTime || 0) + dt * 0.35;
+    }
   } else {
-    // Check if player just released a charged drift! (Classic 3 tiers)
-    if (racer.driftChargeTime >= 0.75) {
-      if (racer.driftChargeTime >= 2.6) {
-        // Tier 3: Ultra Mini-Turbo (Purple sparks)
-        racer.turboTimer = 2.4;
-        racer.speed = Math.max(racer.speed + 13, maxBaseSpeed * 1.32);
+    if (racer.driftChargeTime >= 0.55) {
+      if (racer.driftChargeTime >= 2.4) {
+        racer.turboTimer = 2.5;
+        racer.speed = Math.max(racer.speed + 14, maxBaseSpeed * 1.34);
         soundManager.playTurbo();
-      } else if (racer.driftChargeTime >= 1.6) {
-        // Tier 2: Super Mini-Turbo (Orange sparks)
-        racer.turboTimer = 1.7;
-        racer.speed = Math.max(racer.speed + 8.5, maxBaseSpeed * 1.22);
+      } else if (racer.driftChargeTime >= 1.45) {
+        racer.turboTimer = 1.8;
+        racer.speed = Math.max(racer.speed + 9, maxBaseSpeed * 1.24);
         soundManager.playTurbo();
       } else {
-        // Tier 1: Standard Mini-Turbo (Blue sparks)
-        racer.turboTimer = 1.0;
-        racer.speed = Math.max(racer.speed + 5.5, maxBaseSpeed * 1.12);
+        racer.turboTimer = 1.05;
+        racer.speed = Math.max(racer.speed + 6, maxBaseSpeed * 1.14);
         soundManager.playMiniTurbo();
       }
     }
     racer.driftChargeTime = 0;
-    racer.driftFactor = Math.max(0, racer.driftFactor - dt * 2.5);
+    racer.driftFactor = Math.max(0, racer.driftFactor - dt * 2.8);
   }
 
-  // Progressive, weighted steering damping (Left = -1, Right = +1)
-  const targetSteerAngle = input.steer * 0.38;
-  const steerLerpSpeed = Math.abs(input.steer) > 0.05 ? 12.0 : 16.0;
+  // Steering — much sharper while handbrake is down
+  const steerAmp = racer.isDrifting ? 0.55 : 0.40;
+  const targetSteerAngle = input.steer * steerAmp;
+  const steerLerpSpeed = racer.isDrifting ? 16.0 : (Math.abs(input.steer) > 0.05 ? 12.0 : 16.0);
   racer.steerAngle = THREE.MathUtils.lerp(racer.steerAngle, targetSteerAngle, dt * steerLerpSpeed);
 
-  if (Math.abs(racer.speed) > 0.5) {
-    const speedSteerFactor = THREE.MathUtils.clamp(Math.abs(racer.speed) / 14, 0.45, 1.0);
-    const driftSteerBonus = racer.isDrifting ? 1.32 : 1.0;
+  if (Math.abs(racer.speed) > 0.4) {
+    const speedSteerFactor = THREE.MathUtils.clamp(Math.abs(racer.speed) / 12, 0.5, 1.15);
+    // Big yaw authority on handbrake so tight hairpins are possible
+    const driftSteerBonus = racer.isDrifting ? 2.15 : 1.0;
     const direction = racer.speed >= 0 ? 1 : -1;
     racer.rotY += racer.steerAngle * handlingPower * speedSteerFactor * driftSteerBonus * dt * direction;
   }
 
-  // Position movement with authentic drift lateral slip
+  // Position + strong lateral slip while drifting (the "slide" look)
   const moveSpeed = racer.speed * dt;
-  const driftSlip = racer.isDrifting ? racer.steerAngle * 0.26 : 0;
+  const driftSlip = racer.isDrifting ? racer.steerAngle * (0.55 + racer.driftFactor * 0.35) : 0;
   const moveHeading = racer.rotY + driftSlip;
   racer.x += Math.sin(moveHeading) * moveSpeed;
   racer.z += Math.cos(moveHeading) * moveSpeed;
