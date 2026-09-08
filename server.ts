@@ -28,29 +28,37 @@ const PORT = 3000;
 const app = express();
 app.use(express.json());
 
-// Auto-support reverse-proxy subpaths (e.g. /ralli/...) without env config:
-// rewrite /{prefix}/api/* -> /api/* and /{prefix}/assets/* -> /assets/*
+// Auto-support reverse-proxy subpaths without env config.
+// Any URL that contains /api/ or /assets/ is rewritten to start there.
 app.use((req, _res, next) => {
   const raw = req.url || '/';
   const q = raw.indexOf('?');
   const pathOnly = q >= 0 ? raw.slice(0, q) : raw;
   const qs = q >= 0 ? raw.slice(q) : '';
 
-  if (pathOnly.startsWith('/api') || pathOnly.startsWith('/assets') || pathOnly === '/') {
+  const apiIdx = pathOnly.indexOf('/api/');
+  const apiExact = pathOnly.endsWith('/api') ? pathOnly.length - 4 : -1;
+  const assetIdx = pathOnly.indexOf('/assets/');
+
+  if (apiIdx >= 0) {
+    req.url = pathOnly.slice(apiIdx) + qs;
+    return next();
+  }
+  if (apiExact >= 0) {
+    req.url = '/api' + qs;
+    return next();
+  }
+  if (assetIdx >= 0) {
+    req.url = pathOnly.slice(assetIdx) + qs;
     return next();
   }
 
-  // /ralli or /ralli/ -> /
+  // /ralli or /ralli/ → /
   if (/^\/[^/]+\/?$/.test(pathOnly)) {
     req.url = '/' + qs;
     return next();
   }
 
-  // /ralli/api/... or /ralli/assets/... -> /api/... or /assets/...
-  const stripped = pathOnly.replace(/^\/[^/]+/, '') || '/';
-  if (stripped.startsWith('/api') || stripped.startsWith('/assets') || stripped === '/') {
-    req.url = stripped + qs;
-  }
   next();
 });
 
@@ -341,7 +349,12 @@ async function start() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    // SPA fallback — never return HTML for API (avoids "<!doctype" JSON parse errors)
+    app.get('*', (req, res, next) => {
+      const p = req.path || '';
+      if (p.startsWith('/api') || p.includes('/api/')) {
+        return res.status(404).json({ error: 'API route not found', path: p });
+      }
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

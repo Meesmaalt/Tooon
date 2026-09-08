@@ -29,13 +29,17 @@ auto-rewrites a single path prefix (e.g. `/ralli/api` → `/api`).
 Example nginx:
 
 ```nginx
+# Match both /ralli and /ralli/...
 location /ralli/ {
-  proxy_pass http://127.0.0.1:3001/;   # trailing slash strips /ralli for upstream
+  proxy_pass http://127.0.0.1:3001/;  # strip /ralli for upstream
   proxy_http_version 1.1;
   proxy_set_header Upgrade $http_upgrade;
   proxy_set_header Connection "upgrade";
   proxy_set_header Host $host;
   proxy_set_header X-Forwarded-Proto $scheme;
+}
+location = /ralli {
+  return 301 /ralli/;
 }
 ```
 
