@@ -120,6 +120,8 @@ export class ToonCarEngine {
   private blueWarningCooldown: number = 0;
   private hitStreak: number = 0;
   private hitStreakTimer: number = 0;
+  private physicsAccum: number = 0;
+  private readonly fixedDt: number = 1 / 60;
 
   constructor(
     container: HTMLElement,
@@ -148,7 +150,7 @@ export class ToonCarEngine {
     // 1. Three.js setup
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(trackDef.skyColor);
-    this.scene.fog = new THREE.FogExp2(trackDef.fogColor, 0.0035);
+    this.scene.fog = new THREE.FogExp2(trackDef.fogColor, 0.0028);
 
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
@@ -156,10 +158,10 @@ export class ToonCarEngine {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.0));
+    this.renderer.setPixelRatio(1); // locked 1.0 — DPR>1 is a major stutter source on many GPUs
     this.renderer.shadowMap.enabled = false;
-    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.08;
+    this.renderer.toneMapping = THREE.NoToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
     container.appendChild(this.renderer.domElement);
     this.renderer.sortObjects = true;
     // Cheaper auto-clear path
@@ -472,10 +474,10 @@ export class ToonCarEngine {
     this.animFrameId = requestAnimationFrame(this.loop);
 
     const now = performance.now();
-    let dt = (now - this.lastTime) / 1000;
+    let frameDt = (now - this.lastTime) / 1000;
     this.lastTime = now;
-    if (dt > 0.045) dt = 0.045; // Clamp lag spikes
-    if (dt < 0.001) dt = 0.001;
+    if (frameDt > 0.05) frameDt = 0.05; // clamp spiral
+    if (frameDt < 0) frameDt = 0;
 
     // Pause: freeze sim, keep rendering last frame state
     if (this.paused && this.gameState === 'racing') {
@@ -483,6 +485,34 @@ export class ToonCarEngine {
       return;
     }
 
+    // Fixed 60Hz simulation — removes most physics/camera micro-stutter
+    this.physicsAccum += frameDt;
+    if (this.physicsAccum > 0.12) this.physicsAccum = 0.12; // max 7 steps catch-up
+    let simSteps = 0;
+    while (this.physicsAccum >= this.fixedDt && simSteps < 5) {
+      this.physicsAccum -= this.fixedDt;
+      simSteps++;
+      this.simulate(this.fixedDt, now);
+    }
+
+    // Visual-only updates at display rate
+    this.syncProjectileMeshes();
+    this.updateVisualMeshes(frameDt);
+    this.particles.update(frameDt);
+    this.skidMarks.update(frameDt);
+    this.updateCamera(frameDt);
+
+    this.hudTimer += frameDt;
+    if (this.hudTimer >= 0.12) {
+      this.hudTimer = 0;
+      this.pushHUD();
+    }
+
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  /** One simulation tick (physics, AI, race rules) */
+  private simulate(dt: number, now: number) {
     // 1. Countdown handler
     if (this.gameState === 'countdown') {
       const prevTimer = this.countdownTimer;
@@ -685,15 +715,11 @@ export class ToonCarEngine {
       }
     }
 
-    // 3. Visual meshes, particles, camera & rendering
-    this.syncProjectileMeshes();
-
-    // Update Item Boxes Respawn & Idle Spin
+    // Item boxes respawn + light spin (sim rate)
     this.trackData.itemBoxes.forEach(box => {
       if (box.active) {
-        box.mesh.rotation.y += dt * 2.5;
-        box.mesh.position.y = box.y + Math.sin(now * 0.004) * 0.2;
-        box.mesh.visible = true;
+        box.mesh.rotation.y += dt * 1.8;
+        // Avoid per-frame sine on Y — micro-stutter + matrix cost
       } else {
         box.mesh.visible = false;
         box.respawnTime -= dt;
@@ -705,67 +731,43 @@ export class ToonCarEngine {
       }
     });
 
-    // Clouds gentle drift
-    if (this.cloudsGroup) {
-      this.cloudsGroup.children.forEach(c => {
-        c.position.x += dt * 3.5;
-        if (c.position.x > 320) c.position.x = -320;
-      });
-    }
-
-    // Animate tropical ocean waves
+    // Cheap water bob at sim rate
     if (this.trackData.waterMesh) {
       this.trackData.waterMesh.position.y = -0.4 + Math.sin(now * 0.0018) * 0.12;
     }
-
-    // Update 3D Visual Meshes & Particles
-    this.updateVisualMeshes(dt);
-    this.particles.update(dt);
-    this.skidMarks.update(dt);
-
-    // Dynamic Chase Camera (synchronized position and look-target)
-    this.updateCamera(dt);
-
-    // Notify React HUD (throttled to ~16 FPS to prevent thread stalling)
-    this.hudTimer += dt;
-    if (this.hudTimer >= 0.1) {
-      this.hudTimer = 0;
-      const localRacer = this.racers.find(r => r.id === this.localPlayerId);
-      if (localRacer) {
-        const currentLapTime = localRacer.currentLapStartTime > 0 
-          ? (Date.now() - localRacer.currentLapStartTime) / 1000 
-          : 0;
-        const driftCharge = (localRacer.driftChargeTime || 0) >= 2.6 ? 3 : ((localRacer.driftChargeTime || 0) >= 1.6 ? 2 : ((localRacer.driftChargeTime || 0) >= 0.75 ? 1 : 0));
-
-        this.callbacks.onHUDUpdate({
-          speed: Math.round(Math.abs(localRacer.speed) * 3.6),
-          lap: Math.min(localRacer.lap, this.totalLaps),
-          totalLaps: this.totalLaps,
-          position: localRacer.position,
-          totalRacers: this.racers.length,
-          currentItem: localRacer.currentItem,
-          isDrifting: localRacer.isDrifting,
-          hasTurbo: localRacer.turboTimer > 0,
-          hasShield: localRacer.hasShield,
-          inSlipstream: !!(localRacer as any).inSlipstream,
-          isFinalLap: localRacer.lap >= this.totalLaps && !localRacer.finished,
-          isLeader: localRacer.position === 1,
-          blueThreat: this.projectiles.some(p => p.active && p.type === 'blue_rocket' && p.targetId === this.localPlayerId),
-          isWrongWay: !!localRacer.isWrongWay,
-          currentLapTime,
-          bestLapTime: localRacer.bestLapTime,
-          driftCharge,
-          currentSurface: localRacer.currentSurface,
-          surfaceName: localRacer.surfaceName,
-          surfaceIcon: localRacer.surfaceIcon,
-          minimapData: this.getMinimapData(),
-        });
-      }
-    }
-
-    // Render 3D Scene
-    this.renderer.render(this.scene, this.camera);
   };
+
+  private pushHUD() {
+    const localRacer = this.racers.find(r => r.id === this.localPlayerId);
+    if (!localRacer) return;
+    const currentLapTime = localRacer.currentLapStartTime > 0
+      ? (Date.now() - localRacer.currentLapStartTime) / 1000
+      : 0;
+    const driftCharge = (localRacer.driftChargeTime || 0) >= 2.6 ? 3 : ((localRacer.driftChargeTime || 0) >= 1.6 ? 2 : ((localRacer.driftChargeTime || 0) >= 0.75 ? 1 : 0));
+    this.callbacks.onHUDUpdate({
+      speed: Math.round(Math.abs(localRacer.speed) * 3.6),
+      lap: Math.min(localRacer.lap, this.totalLaps),
+      totalLaps: this.totalLaps,
+      position: localRacer.position,
+      totalRacers: this.racers.length,
+      currentItem: localRacer.currentItem,
+      isDrifting: localRacer.isDrifting,
+      hasTurbo: localRacer.turboTimer > 0,
+      hasShield: localRacer.hasShield,
+      inSlipstream: !!(localRacer as any).inSlipstream,
+      isFinalLap: localRacer.lap >= this.totalLaps && !localRacer.finished,
+      isLeader: localRacer.position === 1,
+      blueThreat: this.projectiles.some(p => p.active && p.type === 'blue_rocket' && p.targetId === this.localPlayerId),
+      isWrongWay: !!localRacer.isWrongWay,
+      currentLapTime,
+      bestLapTime: localRacer.bestLapTime,
+      driftCharge,
+      currentSurface: localRacer.currentSurface,
+      surfaceName: localRacer.surfaceName,
+      surfaceIcon: localRacer.surfaceIcon,
+      minimapData: this.getMinimapData(),
+    });
+  }
 
   private handleCollision(event: CollisionEvent) {
     if (event.type === 'car_bump') {
@@ -1096,7 +1098,7 @@ export class ToonCarEngine {
         if (p.type === 'rocket' || p.type === 'blue_rocket') {
           mesh.rotation.y = Math.atan2(p.vx, p.vz);
           // Occasional exhaust so rockets stay readable in 3D
-          if (Math.random() < 0.45) {
+          if (Math.random() < 0.22) {
             this.particles.emitNitroFlame(
               p.x - Math.sin(mesh.rotation.y) * 1.2,
               p.y,
@@ -1130,7 +1132,7 @@ export class ToonCarEngine {
 
   private updateVisualMeshes(dt: number) {
     this.fxThrottle += dt;
-    const doFx = this.fxThrottle >= 0.05; // ~25 Hz particle FX max
+    const doFx = this.fxThrottle >= 0.07; // ~25 Hz particle FX max
     if (doFx) this.fxThrottle = 0;
 
     this.racers.forEach(racer => {
@@ -1180,7 +1182,7 @@ export class ToonCarEngine {
       // Skidmarks & Drift sparks (throttled FX — main stutter source when every car drifts)
       if (racer.isDrifting) {
         // Skid geometry only for local player every frame; AI every other FX tick
-        if (!racer.isAI || doFx) {
+        if (!racer.isAI) {
           this.skidMarks.addSkid(racer.id, racer.x, racer.y, racer.z, racer.rotY);
         }
         if (doFx) {

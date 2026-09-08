@@ -1426,7 +1426,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   const sectors = getTrackSectors(trackDef.theme);
 
   // Build dense centerline (720 points along spline) for accurate physics on long multi-level tracks
-  const denseCount = 400;
+  const denseCount = 320;
   const centerlinePoints: CenterlinePoint[] = [];
   const upVec = new THREE.Vector3(0, 1, 0);
 
@@ -1610,7 +1610,7 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
   };
 
   // 1. Generate Road Ribbon Geometry with multi-surface materials
-  const segments = 240;
+  const segments = 200;
   const roadGeo = new THREE.BufferGeometry();
   const roadVertices: number[] = [];
   const roadUvs: number[] = [];
@@ -2014,8 +2014,8 @@ export function buildTrack(trackDef: TrackDefinition): TrackData {
     const tangent = curve.getTangentAt(t).normalize();
     const right = new THREE.Vector3().crossVectors(tangent, upVec).normalize();
 
-    // ONE box per station (center) — hard guarantee max 1 pickup opportunity per gate
-    [0].forEach(offset => {
+    // 3 boxes side-by-side (classic arcade). Pickup logic still grants only 1 item per car.
+    [-3.2, 0, 3.2].forEach(offset => {
       const boxPos = pt.clone().add(right.clone().multiplyScalar(offset));
       boxPos.y = pt.y + 1.35;
 
