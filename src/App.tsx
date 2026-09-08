@@ -138,14 +138,23 @@ export default function App() {
           setChatMessages(prev => [...prev.slice(-20), { sender: msg.sender, text: msg.text }]);
         } else if (msg.type === 'race_started') {
           setIsMultiplayer(true);
-          setMultiplayerRacers(msg.players || []);
+          const plist = msg.players || [];
+          // Ensure our stable id is the one present in the room roster
+          const me = plist.find((p: any) => p.id === myPlayerIdRef.current)
+            || plist.find((p: any) => p.name === playerName);
+          if (me) myPlayerIdRef.current = me.id;
+          setMultiplayerRacers(plist);
           if (msg.trackId) setSelectedTrackId(msg.trackId);
           if (msg.laps) setSelectedLaps(msg.laps);
           setScreen('racing');
         } else if (msg.type === 'racer_sync' && msg.state) {
           const eng = engineRef.current;
-          if (eng && msg.state.id !== myPlayerIdRef.current) {
+          if (!eng || !msg.state.id) return;
+          if (msg.state.id === myPlayerIdRef.current) return;
+          try {
             eng.applyRemoteState(msg.state);
+          } catch (e) {
+            console.warn('applyRemoteState failed', e);
           }
         }
       } catch (err) {
@@ -323,9 +332,11 @@ export default function App() {
       isMultiplayer ? myPlayerIdRef.current : (gameMode === 'timetrial' ? myPlayerIdRef.current : 'player_1')
     );
 
-    // Singleplayer default grid uses player_1 — keep engine id aligned
+    // Align controlled car id
     if (!isMultiplayer && gameMode !== 'timetrial') {
       engine.localPlayerId = 'player_1';
+    } else {
+      engine.localPlayerId = myPlayerIdRef.current;
     }
 
     engineRef.current = engine;
@@ -333,16 +344,19 @@ export default function App() {
 
     // Multiplayer: push local car state ~15 Hz
     let syncIv: ReturnType<typeof setInterval> | null = null;
-    if (isMultiplayer && wsRef.current) {
+    if (isMultiplayer) {
       syncIv = setInterval(() => {
         const eng = engineRef.current;
         const ws = wsRef.current;
         if (!eng || !ws || ws.readyState !== WebSocket.OPEN) return;
+        if (typeof eng.getLocalSyncState !== 'function') return;
         const state = eng.getLocalSyncState();
-        if (state) {
-          ws.send(JSON.stringify({ type: 'racer_sync', state }));
+        if (state && state.id) {
+          try {
+            ws.send(JSON.stringify({ type: 'racer_sync', state }));
+          } catch (_) { /* ignore */ }
         }
-      }, 66);
+      }, 33);
     }
 
     return () => {

@@ -865,6 +865,71 @@ export class ToonCarEngine {
     }
   }
 
+
+  /** Snapshot of local car for multiplayer broadcast */
+  public getLocalSyncState() {
+    const r = this.racers.find(x => x.id === this.localPlayerId);
+    if (!r) return null;
+    return {
+      id: r.id,
+      x: r.x,
+      y: r.y,
+      z: r.z,
+      rotY: r.rotY,
+      speed: r.speed,
+      steerAngle: r.steerAngle,
+      isDrifting: r.isDrifting,
+      lap: r.lap,
+      position: r.position,
+      checkpointIndex: r.checkpointIndex,
+      totalDistance: r.totalDistance,
+      turboTimer: r.turboTimer,
+      hasShield: r.hasShield,
+      currentItem: r.currentItem,
+      finished: r.finished,
+      trackT: r.trackT,
+      centerlineIndex: r.centerlineIndex,
+    };
+  }
+
+  /** Apply another client's car state (with light smoothing) */
+  public applyRemoteState(state: any) {
+    if (!state || !state.id) return;
+    if (state.id === this.localPlayerId) return;
+    const r = this.racers.find(x => x.id === state.id);
+    if (!r) return;
+
+    // Snap if far, else lerp — avoids rubber-banding and frozen ghosts
+    const dx = (state.x ?? r.x) - r.x;
+    const dz = (state.z ?? r.z) - r.z;
+    const dist = Math.hypot(dx, dz);
+    const alpha = dist > 12 ? 1 : 0.55;
+
+    if (typeof state.x === 'number') r.x += (state.x - r.x) * alpha;
+    if (typeof state.y === 'number') r.y += (state.y - r.y) * alpha;
+    if (typeof state.z === 'number') r.z += (state.z - r.z) * alpha;
+    if (typeof state.rotY === 'number') {
+      // shortest-path yaw lerp
+      let dYaw = state.rotY - r.rotY;
+      while (dYaw > Math.PI) dYaw -= Math.PI * 2;
+      while (dYaw < -Math.PI) dYaw += Math.PI * 2;
+      r.rotY += dYaw * alpha;
+    }
+    if (typeof state.speed === 'number') r.speed = state.speed;
+    if (typeof state.steerAngle === 'number') r.steerAngle = state.steerAngle;
+    if (typeof state.isDrifting === 'boolean') r.isDrifting = state.isDrifting;
+    if (typeof state.lap === 'number') r.lap = state.lap;
+    if (typeof state.position === 'number') r.position = state.position;
+    if (typeof state.checkpointIndex === 'number') r.checkpointIndex = state.checkpointIndex;
+    if (typeof state.totalDistance === 'number') r.totalDistance = state.totalDistance;
+    if (typeof state.turboTimer === 'number') r.turboTimer = state.turboTimer;
+    if (typeof state.hasShield === 'boolean') r.hasShield = state.hasShield;
+    if (state.currentItem !== undefined) r.currentItem = state.currentItem;
+    if (typeof state.finished === 'boolean') r.finished = state.finished;
+    if (typeof state.trackT === 'number') r.trackT = state.trackT;
+    if (typeof state.centerlineIndex === 'number') r.centerlineIndex = state.centerlineIndex;
+  }
+
   public firePowerUp(racer: RacerState) {
     if (!racer.currentItem) return;
     const arm = this.itemArmTimers.get(racer.id) || 0;
