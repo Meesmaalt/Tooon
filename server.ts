@@ -205,7 +205,7 @@ wss.on('connection', (ws) => {
         const host = room.players.find(x => x.id === currentPlayerId && x.isHost);
         if (host) {
           room.state = 'racing';
-          broadcastToRoom(currentRoomId, {
+          const payload = {
             type: 'race_started',
             trackId: room.trackId,
             laps: room.laps,
@@ -216,6 +216,12 @@ wss.on('connection', (ws) => {
               color: p.color,
               isAI: false,
             })),
+          };
+          // Broadcast to everyone in room (including host)
+          room.players.forEach(p => {
+            if (p.ws && p.ws.readyState === WebSocket.OPEN) {
+              p.ws.send(JSON.stringify(payload));
+            }
           });
         }
       } else if (msg.type === 'racer_sync') {
@@ -233,6 +239,29 @@ wss.on('connection', (ws) => {
             powerup: msg.powerup,
             racerId: currentPlayerId,
           }, ws);
+        }
+      } else if (msg.type === 'leave_room') {
+        if (currentRoomId && currentPlayerId) {
+          const room = rooms.get(currentRoomId);
+          if (room) {
+            room.players = room.players.filter(p => p.id !== currentPlayerId);
+            if (room.players.length === 0) {
+              room.state = 'waiting';
+            } else if (!room.players.some(p => p.isHost)) {
+              room.players[0].isHost = true;
+              broadcastToRoom(currentRoomId, {
+                type: 'player_left',
+                playerId: currentPlayerId,
+                newHostId: room.players[0].id,
+              });
+            } else {
+              broadcastToRoom(currentRoomId, {
+                type: 'player_left',
+                playerId: currentPlayerId,
+              });
+            }
+          }
+          currentRoomId = null;
         }
       } else if (msg.type === 'chat_message') {
         if (currentRoomId) {

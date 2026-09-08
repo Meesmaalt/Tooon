@@ -73,6 +73,7 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<{ sender: string; text: string }[]>([]);
   const [isMultiplayer, setIsMultiplayer] = useState(false);
   const [multiplayerRacers, setMultiplayerRacers] = useState<any[]>([]);
+  const myPlayerIdRef = useRef<string>(`player_${Math.random().toString(36).slice(2, 10)}`);
 
   // Initialize WebSocket connection
   useEffect(() => {
@@ -94,6 +95,7 @@ export default function App() {
         const msg = JSON.parse(event.data);
         if (msg.type === 'room_joined') {
           setCurrentRoom(msg.room);
+          if (msg.yourId) myPlayerIdRef.current = msg.yourId;
         } else if (msg.type === 'player_joined') {
           setCurrentRoom(prev => {
             if (!prev) return prev;
@@ -136,10 +138,15 @@ export default function App() {
           setChatMessages(prev => [...prev.slice(-20), { sender: msg.sender, text: msg.text }]);
         } else if (msg.type === 'race_started') {
           setIsMultiplayer(true);
-          setMultiplayerRacers(msg.players);
-          setSelectedTrackId(msg.trackId);
-          setSelectedLaps(msg.laps);
+          setMultiplayerRacers(msg.players || []);
+          if (msg.trackId) setSelectedTrackId(msg.trackId);
+          if (msg.laps) setSelectedLaps(msg.laps);
           setScreen('racing');
+        } else if (msg.type === 'racer_sync' && msg.state) {
+          const eng = engineRef.current;
+          if (eng && msg.state.id !== myPlayerIdRef.current) {
+            eng.applyRemoteState(msg.state);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -309,16 +316,37 @@ export default function App() {
       isMultiplayer
         ? multiplayerRacers
         : gameMode === 'timetrial'
-        ? [{ id: 'player_1', name: playerName, carId: selectedCarId, color: selectedColor, isAI: false }]
+        ? [{ id: myPlayerIdRef.current, name: playerName, carId: selectedCarId, color: selectedColor, isAI: false }]
         : undefined,
       customization,
-      speedClass
+      speedClass,
+      isMultiplayer ? myPlayerIdRef.current : (gameMode === 'timetrial' ? myPlayerIdRef.current : 'player_1')
     );
+
+    // Singleplayer default grid uses player_1 — keep engine id aligned
+    if (!isMultiplayer && gameMode !== 'timetrial') {
+      engine.localPlayerId = 'player_1';
+    }
 
     engineRef.current = engine;
     setPaused(false);
 
+    // Multiplayer: push local car state ~15 Hz
+    let syncIv: ReturnType<typeof setInterval> | null = null;
+    if (isMultiplayer && wsRef.current) {
+      syncIv = setInterval(() => {
+        const eng = engineRef.current;
+        const ws = wsRef.current;
+        if (!eng || !ws || ws.readyState !== WebSocket.OPEN) return;
+        const state = eng.getLocalSyncState();
+        if (state) {
+          ws.send(JSON.stringify({ type: 'racer_sync', state }));
+        }
+      }, 66);
+    }
+
     return () => {
+      if (syncIv) clearInterval(syncIv);
       if (engineRef.current) {
         engineRef.current.destroy();
         engineRef.current = null;
@@ -372,7 +400,7 @@ export default function App() {
       type: 'join_room',
       roomId,
       player: {
-        id: `player_${Date.now()}`,
+        id: myPlayerIdRef.current,
         name: playerName,
         carId: selectedCarId,
         color: selectedColor,

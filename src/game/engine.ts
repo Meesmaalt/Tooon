@@ -132,13 +132,17 @@ export class ToonCarEngine {
     callbacks: GameEngineCallbacks,
     customRacers?: { id: string; name: string; carId: string; color: string; isAI: boolean }[],
     userCustomization?: CarCustomization,
-    speedClass?: SpeedClass
+    speedClass?: SpeedClass,
+    localPlayerId?: string
   ) {
     this.container = container;
     this.trackDef = trackDef;
     this.totalLaps = totalLaps;
     this.callbacks = callbacks;
     this.userCustomization = userCustomization;
+    if (localPlayerId) {
+      this.localPlayerId = localPlayerId;
+    }
     if (speedClass === '50cc') {
       this.speedFactor = 0.85;
     } else if (speedClass === '150cc') {
@@ -562,12 +566,13 @@ export class ToonCarEngine {
 
     this.racers.forEach(racer => {
       let input: PlayerInput = this._blankInput;
+      const isLocal = racer.id === this.localPlayerId;
+      const isRemoteHuman = !racer.isAI && !isLocal;
 
       if (canDrive && !racer.finished) {
-        if (racer.id === this.localPlayerId) {
+        if (isLocal) {
           input = this.localInput;
 
-          // Check if player used item (must be armed after pickup — no instant fire)
           if (this.localInput.useItem && racer.currentItem) {
             const arm = this.itemArmTimers.get(racer.id) || 0;
             if (arm <= 0) {
@@ -576,7 +581,6 @@ export class ToonCarEngine {
             this.localInput.useItem = false;
           }
 
-          // Check honk
           if (this.localInput.honk) {
             soundManager.playHonk();
             this.localInput.honk = false;
@@ -592,7 +596,12 @@ export class ToonCarEngine {
         }
       }
 
-      // Physics update (buttery smooth per frame)
+      // Remote human players: driven by network snapshots, not local physics
+      if (isRemoteHuman) {
+        // light visual-only integration already applied via applyRemoteState
+        return;
+      }
+
       updateRacerPhysics(racer, input, this.trackData, dt, (event) => this.handleCollision(event), this.speedFactor);
 
       // Sound update for local player
@@ -1253,7 +1262,7 @@ export class ToonCarEngine {
   }
 
   private updateCamera(dt: number) {
-    const player = this.racers.find(r => r.id === this.localPlayerId);
+    const player = this.racers.find(r => r.id === this.localPlayerId) || this.racers[0];
     if (!player) return;
 
     const isLookingBack = !!this.localInput.lookBehind;
