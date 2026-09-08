@@ -28,16 +28,33 @@ const PORT = 3000;
 const app = express();
 app.use(express.json());
 
-// Optional public path prefix (e.g. /ralli) when reverse-proxy does NOT strip it
-const BASE_PATH = (process.env.BASE_PATH || '').replace(/\/$/, '');
-if (BASE_PATH) {
-  app.use((req, _res, next) => {
-    if (req.url.startsWith(BASE_PATH + '/') || req.url === BASE_PATH) {
-      req.url = req.url.slice(BASE_PATH.length) || '/';
-    }
-    next();
-  });
-}
+// Auto-support reverse-proxy subpaths (e.g. /ralli/...) without env config:
+// rewrite /{prefix}/api/* -> /api/* and /{prefix}/assets/* -> /assets/*
+app.use((req, _res, next) => {
+  const raw = req.url || '/';
+  const q = raw.indexOf('?');
+  const pathOnly = q >= 0 ? raw.slice(0, q) : raw;
+  const qs = q >= 0 ? raw.slice(q) : '';
+
+  if (pathOnly.startsWith('/api') || pathOnly.startsWith('/assets') || pathOnly === '/') {
+    return next();
+  }
+
+  // /ralli or /ralli/ -> /
+  if (/^\/[^/]+\/?$/.test(pathOnly)) {
+    req.url = '/' + qs;
+    return next();
+  }
+
+  // /ralli/api/... or /ralli/assets/... -> /api/... or /assets/...
+  const stripped = pathOnly.replace(/^\/[^/]+/, '') || '/';
+  if (stripped.startsWith('/api') || stripped.startsWith('/assets') || stripped === '/') {
+    req.url = stripped + qs;
+  }
+  next();
+});
+
+
 
 
 const server = http.createServer(app);

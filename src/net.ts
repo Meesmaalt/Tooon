@@ -1,16 +1,16 @@
-/** Public URL helpers — root or reverse-proxy subpath without hardcoding host/domain */
-
+/**
+ * Runtime public base from the browser URL.
+ * Works at / and under any reverse-proxy subpath (e.g. /ralli/) without env/hardcoding.
+ */
 export function getPublicBase(): string {
-  const viteBase = (import.meta as any).env?.BASE_URL || '/';
-  if (viteBase === './' || viteBase === '.') {
-    let p = window.location.pathname;
-    if (!p.endsWith('/')) {
-      const i = p.lastIndexOf('/');
-      p = i >= 0 ? p.slice(0, i + 1) : '/';
-    }
-    return p || '/';
+  let p = window.location.pathname || '/';
+  // If path looks like a file (has extension), use its directory
+  if (/\.[a-zA-Z0-9]+$/.test(p)) {
+    p = p.slice(0, p.lastIndexOf('/') + 1);
+  } else if (!p.endsWith('/')) {
+    p = p + '/';
   }
-  return viteBase.endsWith('/') ? viteBase : viteBase + '/';
+  return p || '/';
 }
 
 export function apiUrl(path: string): string {
@@ -21,6 +21,7 @@ export function apiUrl(path: string): string {
 
 export function wsUrl(): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  // Same origin path as the page (directory), so proxies under /ralli/ still match
   const base = getPublicBase().replace(/\/$/, '');
   return `${protocol}//${window.location.host}${base || ''}`;
 }

@@ -20,21 +20,17 @@ View your app in AI Studio: https://ai.studio/apps/1548a2fc-f2cb-4001-b3aa-eb8b2
    `npm run dev`
 
 
-## Reverse proxy (HTTPS subpath, e.g. https://example.com/ralli/)
 
-Do **not** hardcode the domain in code. Build with a base path:
+## Reverse proxy (HTTPS)
 
-```bash
-# docker-compose.yml or build args
-VITE_BASE_PATH=/ralli/
-BASE_PATH=/ralli
-```
+No special path env vars required. The client uses relative URLs; the server
+auto-rewrites a single path prefix (e.g. `/ralli/api` → `/api`).
 
-Example nginx (prefix stripped toward the container):
+Example nginx:
 
 ```nginx
 location /ralli/ {
-  proxy_pass http://127.0.0.1:3000/;   # trailing slash strips /ralli
+  proxy_pass http://127.0.0.1:3001/;   # trailing slash strips /ralli for upstream
   proxy_http_version 1.1;
   proxy_set_header Upgrade $http_upgrade;
   proxy_set_header Connection "upgrade";
@@ -43,6 +39,4 @@ location /ralli/ {
 }
 ```
 
-If the proxy does **not** strip the prefix, set `BASE_PATH=/ralli` so Express rewrites URLs.
-
-Assets and `/api/rooms` + WebSocket use the same public base path as the page.
+Also works if the proxy does **not** strip the prefix (server rewrites automatically).
